@@ -1,0 +1,86 @@
+# Charm Tech
+
+Shared standards, conventions, and templates for the repositories maintained by
+the Charm Tech team.
+
+This repository is the canonical home for the things our repos have in common.
+Rather than copy-pasting (and slowly diverging) the same style guides, security
+policies, and CI config across every repo, we keep the source of truth here and
+either link to it or copy from it.
+
+## Contents
+
+### Decisions
+
+- [DECISIONS.md](./DECISIONS.md) — a running log of team decisions.
+
+### Style guides
+
+Our style guides reflect team decisions, and we add to them as things come up in
+code review.
+
+- [STYLE.md](./STYLE.md) — documentation and docstring style (language-agnostic:
+  British English, abbreviations, how to write great docs).
+- [python/STYLE.md](./python/STYLE.md) — Python code style.
+- [go/STYLE.md](./go/STYLE.md) — Go code style.
+
+Other repos should link to these rather than maintaining their own copies. For
+example, an `AGENTS.md` or `CONTRIBUTING.md` can point at
+`https://github.com/canonical/charm-tech/blob/main/STYLE.md`.
+
+### Python project config
+
+Canonical snippets to copy into a Python project, so that lint/format/type-check
+behave consistently across repos:
+
+- [python/pyproject-snippets.toml](./python/pyproject-snippets.toml) — `ruff`,
+  `codespell`, `pyright`, and `coverage` config.
+- [python/tox-template.ini](./python/tox-template.ini) — standard `lint`,
+  `format`, `static`, and `unit` environments.
+
+### Templates
+
+Files to copy into a repo and lightly customise (replace `{{REPO}}` etc.):
+
+- [templates/SECURITY.md](./templates/SECURITY.md)
+- [templates/CONTRIBUTING.md](./templates/CONTRIBUTING.md)
+- [templates/AGENTS.md](./templates/AGENTS.md)
+- [templates/dependabot-python-uv.yaml](./templates/dependabot-python-uv.yaml)
+- [templates/dependabot-go.yaml](./templates/dependabot-go.yaml)
+- [templates/pre-commit-config.yaml](./templates/pre-commit-config.yaml)
+- [templates/claude-settings.json](./templates/claude-settings.json)
+- [templates/zizmor-caller.yaml](./templates/zizmor-caller.yaml) — caller for the
+  reusable zizmor workflow below.
+
+### Reusable CI
+
+- [.github/workflows/zizmor.yaml](./.github/workflows/zizmor.yaml) — a reusable
+  workflow that runs the [zizmor](https://github.com/zizmorcore/zizmor) GitHub
+  Actions security scanner and uploads SARIF results.
+
+Call it from another repo with a thin caller workflow:
+
+```yaml
+# .github/workflows/zizmor.yaml in the consuming repo
+name: Workflow static checks
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["**"]
+permissions: {}
+jobs:
+  zizmor:
+    uses: canonical/charm-tech/.github/workflows/zizmor.yaml@<commit-sha>
+    permissions:
+      security-events: write
+```
+
+Pin to a commit SHA (not `@main`) so a change here can't silently alter another
+repo's CI. See [templates/zizmor-caller.yaml](./templates/zizmor-caller.yaml)
+for a ready-to-copy caller.
+
+## Licence
+
+This repository is licensed under the Apache License 2.0. See
+[LICENSE.txt](./LICENSE.txt).
