@@ -14,6 +14,12 @@ either link to it or copy from it.
 
 - [DECISIONS.md](./DECISIONS.md) — a running log of team decisions.
 
+### Specs
+
+- [specs/](./specs/) — cleaned, redacted copies of the team's Operator
+  Engineering (OP) specifications. Authoritative versions live at
+  [specs.canonical.com](https://specs.canonical.com).
+
 ### Style guides
 
 Our style guides reflect team decisions, and we add to them as things come up in
