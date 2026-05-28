@@ -34,29 +34,3 @@ Other repos should link to these rather than maintaining their own copies. For
 example, an `AGENTS.md` or `CONTRIBUTING.md` can point at
 `https://github.com/canonical/charm-tech/blob/main/style/docs.md`.
 
-### Reusable CI
-
-Reusable workflows for other repos to call live in
-[.github/workflows/](./.github/workflows/). The main one runs the
-[zizmor](https://github.com/zizmorcore/zizmor) GitHub Actions security scanner
-and uploads SARIF results; call it from another repo with a thin caller
-workflow:
-
-```yaml
-# .github/workflows/zizmor.yaml in the consuming repo
-name: Workflow static checks
-on:
-  push:
-    branches: ["main"]
-  pull_request:
-    branches: ["**"]
-permissions: {}
-jobs:
-  zizmor:
-    uses: canonical/charm-tech/.github/workflows/zizmor.yaml@<commit-sha>
-    permissions:
-      security-events: write
-```
-
-Pin to a commit SHA (not `@main`) so a change here can't silently alter another
-repo's CI.
