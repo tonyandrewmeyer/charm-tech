@@ -1,0 +1,183 @@
+# Question battery for canonical/pebble AGENTS.md.
+# Schema: ../../references/question-batteries.md
+schema_version: 1
+repo: pebble
+upstream: canonical/pebble
+source:
+  agents_md_ref: chore/agents-md
+  agents_md_sha: 40e3936c1a07ea3d2e1b792471d1aeaa2a76aa29
+  agents_md_sha256: 44d99acdc5011e872b66633b1e19186f3cae489ebb3de68223203c866a5f044e
+  seeded_from: roadmap/26.10/repo-setup/agents-md-validation.md (pebble table)
+  seeded_on: 2026-08-19
+
+entries:
+  - id: unit-tests
+    question: What command runs pebble's unit tests?
+    classification: cache
+    source_line: "go test -race ./... # unit tests (CI runs with -race)"
+    answer:
+      grade: command
+      expect: go test -race ./...
+    verify:
+      - kind: text_in_file
+        file: .github/workflows/tests.yml
+        pattern: go test -race \./\.\.\.
+    ci_verifiable: true
+    note: >-
+      Passes on a non-root runner. As root without PEBBLE_TEST_USER/
+      PEBBLE_TEST_GROUP set, servstate.TestUserGroup takes its non-skip branch
+      and fails — an environment artifact, not staleness (see the 2026-07-28
+      Layer 1 build log).
+
+  - id: single-gocheck-suite
+    question: How do you run just the PebbleSuite gocheck suite?
+    classification: cache
+    source_line: "go test ./internals/cli -check.f PebbleSuite # single gocheck suite or test"
+    answer:
+      grade: command
+      expect: go test ./internals/cli -check.f PebbleSuite
+    verify:
+      - kind: suite_in_package
+        suite: PebbleSuite
+        package: internals/cli
+    ci_verifiable: true
+    note: >-
+      The canonical staleness case. HACKING.md documented this against
+      ./cmd/pebble long after the suite moved to internals/cli, and cmd/pebble
+      has no test files at all.
+
+  - id: root-test-env-vars
+    question: What must be set to run the pebble tests that require root?
+    classification: cache
+    source_line: PEBBLE_TEST_USER=$USER PEBBLE_TEST_GROUP=$USER sudo -E -H "$(which go)" test ./...
+    answer:
+      grade: keywords
+      require:
+        - PEBBLE_TEST_USER
+        - PEBBLE_TEST_GROUP
+        - sudo
+    verify:
+      - kind: text_in_file
+        file: .github/workflows/tests.yml
+        pattern: PEBBLE_TEST_USER=\w+ PEBBLE_TEST_GROUP=\w+
+    ci_verifiable: false
+    gated_by: root/sudo — the root-tests job runs as a separate privileged CI job
+
+  - id: integration-build-tag
+    question: How do you run pebble's integration tests?
+    classification: cache
+    source_line: "go test -count=1 -tags=integration ./tests/ # integration tests (build tag)"
+    answer:
+      grade: command
+      expect: go test -count=1 -tags=integration ./tests/
+    verify:
+      - kind: text_in_file
+        file: tests/main_test.go
+        pattern: //go:build integration
+    ci_verifiable: false
+    gated_by: >-
+      integration environment — and no workflow runs these at all, so the build
+      tag is the only anchor available
+
+  - id: no-empty-interface
+    question: What must you write instead of `interface{}` in this codebase?
+    classification: override
+    source_line: CI also rejects any use of `interface{}` — write `any`.
+    answer:
+      grade: keywords
+      require:
+        - any
+    verify:
+      - kind: text_in_file
+        file: .github/workflows/tests.yml
+        pattern: Ensure no use of empty interface
+    ci_verifiable: true
+    note: >-
+      The design doc places this gate in lint.yml. It is in tests.yml, in the
+      `format` job — corrected here.
+
+  - id: message-casing
+    question: How are error messages and log messages capitalised in pebble?
+    classification: override
+    source_line: >-
+      **Error messages** are lowercase and start with "cannot" (`cannot create log
+      client: %w`); **log messages** are capitalised and start with "Cannot".
+    case_sensitive: true
+    answer:
+      grade: keywords
+      require:
+        - cannot
+        - Cannot
+    verify:
+      - kind: text_in_file
+        file: STYLE.md
+        pattern: Start error messages with "cannot"
+    ci_verifiable: false
+    gated_by: >-
+      style convention enforced in review, not by a linter — STYLE.md is the
+      only anchor
+
+  - id: gocheck-dot-import
+    question: How is the gocheck package imported in pebble's tests, and what does the repo use instead of stdlib testing assertions?
+    classification: override
+    source_line: >-
+      Tests use [`gopkg.in/check.v1`](https://pkg.go.dev/gopkg.in/check.v1),
+      dot-imported (`. "gopkg.in/check.v1"`), not the stdlib `testing` assertions.
+    answer:
+      grade: judgement
+      rubric: >-
+        A correct reply must establish both halves: gocheck (gopkg.in/check.v1)
+        is the assertion library, and it is dot-imported. A reply naming gocheck
+        without the dot-import misses the load-bearing half — agents avoid dot
+        imports by default — so a keyword grader on "check.v1" alone would pass
+        answers that fail the actual test.
+    verify:
+      - kind: text_in_file
+        file: internals/cli/cli_test.go
+        pattern: '\. "gopkg\.in/check\.v1"'
+    ci_verifiable: true
+
+  - id: lint-tool-pins
+    question: Which staticcheck and govulncheck versions does pebble's CI pin?
+    classification: cache
+    source_line: go install honnef.co/go/tools/cmd/staticcheck@v0.7.0 && staticcheck ./...
+    answer:
+      grade: keywords
+      require:
+        - v0.7.0
+        - v1.1.4
+    verify:
+      - kind: text_in_file
+        file: .github/workflows/lint.yml
+        pattern: staticcheck@v0\.7\.0
+      - kind: text_in_file
+        file: .github/workflows/lint.yml
+        pattern: govulncheck@v1\.1\.4
+    ci_verifiable: true
+    note: >-
+      Drift-prone, and already skewed inside the repo: tiobe.yaml pins
+      staticcheck@v0.6.1 against lint.yml's v0.7.0. That skew is a separate
+      defect (scope decisions §3) and is not this entry's business — this entry
+      asserts what AGENTS.md claims is what lint.yml pins.
+
+  - id: cli-help-staleness-gate
+    question: After changing a pebble CLI command, what must you run so CI does not fail on stale docs?
+    classification: cache
+    source_line: >-
+      After changing a CLI command, run `make cli-help` in `docs/` (CI fails if
+      the generated CLI reference is stale).
+    answer:
+      grade: command
+      expect: make cli-help
+    verify:
+      - kind: text_in_file
+        file: docs/Makefile
+        pattern: "^cli-help:"
+      - kind: text_in_file
+        file: .github/workflows/tests.yml
+        pattern: make cli-help
+    ci_verifiable: true
+    note: >-
+      Per scope decisions §1 this runs with a diff-clean assertion and a
+      restore, rather than being gated as tree-mutating. That decision is
+      settled but not yet implemented in agents-md-content.py.

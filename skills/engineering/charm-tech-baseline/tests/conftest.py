@@ -20,16 +20,20 @@ def run_check(tmp_path, monkeypatch):
     """Return ``run(check_name, tier, files)`` -> parsed JSON dict.
 
     ``files`` is a mapping of repo-relative path -> file contents. Parent
-    directories are created as needed. The check runs with cwd = tmp_path.
+    directories are created as needed. ``args`` are extra CLI flags passed
+    after ``--tier``. The check runs with cwd = tmp_path.
     """
-    def _run(name: str, tier: str, files: dict[str, str]) -> dict:
+    def _run(
+        name: str, tier: str, files: dict[str, str], args: tuple[str, ...] = ()
+    ) -> dict:
         for rel, body in files.items():
             dest = tmp_path / rel
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_text(body)
         monkeypatch.chdir(tmp_path)
         proc = subprocess.run(
-            ["uv", "run", "--script", str(SCRIPTS / "checks" / f"{name}.py"), f"--tier={tier}"],
+            ["uv", "run", "--script", str(SCRIPTS / "checks" / f"{name}.py"),
+             f"--tier={tier}", *args],
             capture_output=True, text=True, check=False,
         )
         assert proc.stdout, f"{name} produced no stdout (stderr: {proc.stderr!r})"

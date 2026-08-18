@@ -1,0 +1,162 @@
+# Question battery for canonical/pytest-jubilant AGENTS.md.
+# Schema: ../../references/question-batteries.md
+schema_version: 1
+repo: pytest-jubilant
+upstream: canonical/pytest-jubilant
+source:
+  agents_md_ref: chore/agents-md
+  agents_md_sha: 46276b0fe118266f61ad45f0e1c59116cd884b57
+  agents_md_sha256: c00f361f0304fa22a6e6f16da30c015a6085ac8cccf98406ed43cdc54865a589
+  seeded_from: roadmap/26.10/repo-setup/agents-md-validation.md (pytest-jubilant table)
+  seeded_on: 2026-08-19
+
+entries:
+  - id: tox-bootstrap
+    question: How do you install the task runner this repo's commands go through?
+    classification: cache
+    source_line: uv tool install tox --with tox-uv
+    answer:
+      grade: command
+      expect: uv tool install tox --with tox-uv
+    verify:
+      - kind: text_in_file
+        file: .github/workflows/quality_checks.yaml
+        pattern: uv tool install tox --with tox-uv
+    ci_verifiable: false
+    gated_by: >-
+      installs a tool into the environment — Layer 1 check 2 classifies
+      `uv tool install` as side-effecting and does not execute it
+
+  - id: lint-command
+    question: What command lints this repo?
+    classification: cache
+    source_line: "tox -e lint # ruff format --check, ruff check, pyright (must pass before pushing)"
+    answer:
+      grade: command
+      expect: tox -e lint
+    verify:
+      - kind: text_in_file
+        file: tox.ini
+        pattern: \[testenv:lint\]
+    ci_verifiable: true
+
+  - id: unit-test-command
+    question: What command runs the unit tests?
+    classification: cache
+    source_line: "tox -e unit # unit tests under tests/unit with coverage"
+    answer:
+      grade: command
+      expect: tox -e unit
+    verify:
+      - kind: text_in_file
+        file: tox.ini
+        pattern: \[testenv:unit\]
+    ci_verifiable: true
+
+  - id: integration-command
+    question: What command runs the integration tests?
+    classification: cache
+    source_line: "tox -e integration # integration tests under tests/integration"
+    answer:
+      grade: command
+      expect: tox -e integration
+    verify:
+      - kind: text_in_file
+        file: tox.ini
+        pattern: \[testenv:integration\]
+    ci_verifiable: false
+    gated_by: a Juju model and packed charms
+
+  - id: integration-prerequisites
+    question: What has to be prepared before the integration tests will run locally?
+    classification: cache
+    source_line: >-
+      The integration tests need packed test charms; pack them and set the
+      `*CHARM_PATH` environment variables they reference before running locally.
+    answer:
+      grade: keywords
+      require:
+        - pack
+        - CHARM_PATH
+    verify:
+      - kind: text_in_file
+        file: tox.ini
+        pattern: CHARM_PATH
+      - kind: text_in_file
+        file: tests/integration/conftest.py
+        pattern: _CHARM_PATH
+    ci_verifiable: false
+    gated_by: packed charms — the charms must be built before the env vars mean anything
+    note: >-
+      High derivation cost: the variable names are only discoverable by reading
+      tests/integration/conftest.py, and the pack step is not written down
+      anywhere else in the tree.
+
+  - id: python-floor
+    question: What is the minimum Python version this repo must support?
+    classification: override
+    source_line: "**Python floor is 3.8** (set by jubilant) — keep code compatible."
+    answer:
+      grade: keywords
+      require:
+        - "3.8"
+    verify:
+      - kind: text_in_file
+        file: pyproject.toml
+        pattern: requires-python = ">=3\.8"
+    ci_verifiable: true
+    note: >-
+      The override that matters — an agent left to itself writes 3.10+ syntax.
+      The floor is inherited from jubilant, so it can move without anything in
+      this repo changing except the pin this entry watches.
+
+  - id: commit-convention
+    question: What commit-message convention does this repo use, and are scopes allowed?
+    classification: override
+    source_line: >-
+      **Commits / PR titles:** [Conventional Commits](https://www.conventionalcommits.org/);
+      no scopes.
+    answer:
+      grade: judgement
+      rubric: >-
+        A correct reply must establish both halves: Conventional Commits, and
+        that scopes are not permitted. Keyword grading on "conventional" alone
+        passes replies that offer `feat(plugin): …`, which is the exact mistake
+        this line exists to prevent.
+    verify:
+      - kind: text_in_file
+        file: .github/check-conventional-pr-title.py
+        pattern: disallows scopes
+      - kind: text_in_file
+        file: .github/workflows/validate-pr-title.yaml
+        pattern: check-conventional-pr-title\.py
+    ci_verifiable: true
+    note: >-
+      The design doc calls this line "not derivable from the tree at all
+      (convention lives in review practice)". That is no longer true: the
+      validate-pr-title sweep added .github/check-conventional-pr-title.py,
+      which states and enforces the no-scopes rule. Still an override — an
+      agent will not read a CI helper script before writing a commit message —
+      but it is now anchored, and the design doc's rationale needs amending.
+
+  - id: pr-title-becomes-commit
+    question: What becomes the commit message when a pull request is merged here?
+    classification: override
+    source_line: The PR title becomes the squashed commit message.
+    answer:
+      grade: keywords
+      require:
+        - PR title
+        - squash
+    verify:
+      - kind: none
+        reason: >-
+          This is the repo's squash-merge setting, which lives in GitHub's
+          configuration and is not represented anywhere in the tree. Nothing
+          here can go stale in a way a file check would notice; it goes stale
+          when somebody changes the merge method.
+    ci_verifiable: false
+    gated_by: GitHub repo settings — readable only via the API, not from a checkout
+    note: >-
+      This half of the design doc's row genuinely is un-anchored, unlike the
+      no-scopes half. Splitting the row was what made that visible.

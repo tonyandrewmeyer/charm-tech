@@ -62,6 +62,7 @@ The agent's job is to read the JSON, identify the gaps that need human judgement
 - [`references/decisions.md`](references/decisions.md) — settled cycle-level decisions and carve-outs (for example, admin bypass is `pull_request` not `always`).
 - [`references/skipped-tools.md`](references/skipped-tools.md) — tools that were *measured* and skipped (harden-runner, actionlint, pydoclint, prek, shellcheck), with the basis. **Do not re-recommend these without new evidence.**
 - [`references/open-investigations.md`](references/open-investigations.md) — items waiting on external triggers (`uv audit` stable, GitHub native L7 firewall GA, OpenSSF Scorecard rollout gated on operator).
+- [`references/question-batteries.md`](references/question-batteries.md) — the AGENTS.md question-battery schema: what an entry records, why grading an answer and verifying it against the repo are kept apart, and when an entry honestly has no repo anchor.
 
 ### 4. Apply mechanical fixes
 
@@ -83,6 +84,8 @@ The skill currently ships these checks. New checks land in [`scripts/checks/`](s
 | `code-of-conduct` | all | Convention | Ubuntu-CoC link-only form (not Contributor Covenant). |
 | `contributing` | product, canonical | Convention | `CONTRIBUTING.md` *or* `HACKING.md` *or* `docs/contributing.md` accepted, AND a `# Pull requests` heading so the validate-pr-title.py "Read more" URL anchors. Template at [`assets/CONTRIBUTING.md.template`](assets/CONTRIBUTING.md.template) follows the dominant Charm Tech pattern (substantive standalone doc; no SECURITY/CoC cross-links — those live in their own files). |
 | `agents-md` | all | Best-of-class | Minimal AGENTS.md (warns past 200 lines). |
+| `agents-md-content` | all | Best-of-class | AGENTS.md content is trustworthy, not merely present (Layer 1 staleness): commands parse and their tools resolve, safe commands run and exit 0 while environment-gated ones are reported `verify-manually`, referenced paths/symbols/test suites resolve, prose version pins match what CI pins, and harness-shaped content is flagged as out of scope. `na` when there is no AGENTS.md. |
+| `agents-md-battery` | all | Best-of-class | The repo's question battery still describes the repo (Layer 2 seed data): every `source_line` is still in AGENTS.md, every assertion still holds, and the entries conform to the schema. Batteries live in [`assets/question-batteries/`](assets/question-batteries/), one per repo; schema and rationale in [`references/question-batteries.md`](references/question-batteries.md). `na` for a repo with no battery — only repos through the Layer 2 authoring gate have one. |
 | `pre-commit-config` | all | Convention | Flags `rev:` version pins (versions belong in `pyproject.toml`). |
 | `gha-sha-pinning` | all | Astral best-of-class | All actions SHA-pinned; no exceptions allowed. |
 | `yaml-extension` | all | Convention | YAML files under `.github/` must use `.yaml`, not `.yml`. Mechanical fix at [`scripts/fixes/rename-yml-to-yaml.py`](scripts/fixes/rename-yml-to-yaml.py) uses `git mv`; a manual sweep is still needed for `workflow_call uses:` paths, README links, and downstream action consumers. |
