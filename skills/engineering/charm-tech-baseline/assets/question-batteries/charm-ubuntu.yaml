@@ -1,0 +1,143 @@
+# Question battery for canonical/charm-ubuntu AGENTS.md.
+# Schema: ../../references/question-batteries.md
+schema_version: 1
+repo: charm-ubuntu
+upstream: canonical/charm-ubuntu
+source:
+  agents_md_ref: chore/agents-md
+  agents_md_sha: 6350aa338ba5a9b7fcfc0131cf44fa4576c14d16
+  agents_md_sha256: f874b13341c375e0675b2d2df402466604d866d2099e3c172271c85a3654bd19
+  seeded_from: roadmap/26.10/repo-setup/agents-md-validation.md (charm-ubuntu table)
+  seeded_on: 2026-08-19
+
+entries:
+  - id: formatter-and-linter
+    question: Which formatter and linter does this repo use, and at what line length?
+    classification: override
+    source_line: >-
+      **`black` and `flake8`, not `ruff`** — line length 88.
+    answer:
+      grade: keywords
+      require:
+        - black
+        - flake8
+        - "88"
+      reject:
+        - ruff
+    verify:
+      - kind: text_in_file
+        file: tox.ini
+        pattern: ^\s*black$
+      - kind: text_in_file
+        file: tox.ini
+        pattern: ^\s*flake8$
+      - kind: text_in_file
+        file: tox.ini
+        pattern: max-line-length = 88
+    ci_verifiable: true
+    note: >-
+      The exemplar override for the whole scheme: an agent reaches for ruff
+      unprompted, and ruff is not installed here, so the mistake costs a failed
+      lint run rather than a wrong-but-working result.
+
+  - id: test-pythonpath
+    question: How do this repo's tests import the charm module?
+    classification: override
+    source_line: Tests set `PYTHONPATH=src` so `import charm` resolves.
+    answer:
+      grade: keywords
+      require:
+        - PYTHONPATH
+        - src
+    verify:
+      - kind: text_in_file
+        file: tox.ini
+        pattern: PYTHONPATH=\{toxinidir\}/src
+    ci_verifiable: true
+
+  - id: python-floor
+    question: Which Python versions must this charm's code stay compatible with?
+    classification: override
+    source_line: >-
+      **Wide Python support:** CI lints and unit-tests on 3.6, 3.8, 3.10, and 3.12.
+      Keep `src/charm.py` compatible with 3.6.
+    answer:
+      grade: keywords
+      require:
+        - "3.6"
+    verify:
+      - kind: text_in_file
+        file: .github/workflows/tests.yml
+        pattern: "'3\\.6'"
+    ci_verifiable: true
+    note: >-
+      Per the design doc this override is only ever evicted by the constraint
+      disappearing — i.e. by 3.6 leaving the CI matrix this entry watches, not
+      by an eval result.
+
+  - id: ops-api-pin
+    question: Which version of `ops` does this charm target?
+    classification: override
+    source_line: >-
+      **`ops` is pinned to `>=1.0,<2.0`** (`requirements.txt`) — this charm tracks
+      the 1.x API, not current `ops`.
+    answer:
+      grade: keywords
+      require:
+        - ">=1.0,<2.0"
+    verify:
+      - kind: text_in_file
+        file: requirements.txt
+        pattern: ops>=1\.0,<2\.0
+    ci_verifiable: true
+    note: >-
+      An agent writes current-ops idioms by default; on the 1.x API those are
+      not merely stylistically off, they do not exist.
+
+  - id: lint-command
+    question: What command lints this repo?
+    classification: cache
+    source_line: "tox -e lint # flake8 + black --check (this charm uses black, not ruff)"
+    answer:
+      grade: command
+      expect: tox -e lint
+    verify:
+      - kind: text_in_file
+        file: tox.ini
+        pattern: \[testenv:lint\]
+    ci_verifiable: true
+
+  - id: unit-test-command
+    question: What command runs the unit tests?
+    classification: cache
+    source_line: "tox -e unit # unit tests under tests/unit"
+    answer:
+      grade: command
+      expect: tox -e unit
+    verify:
+      - kind: text_in_file
+        file: tox.ini
+        pattern: \[testenv:unit\]
+    ci_verifiable: true
+
+  - id: integration-prerequisites
+    question: What does running the integration tests require?
+    classification: cache
+    source_line: "tox -e integration # deploys to LXD; needs juju and charmcraft (packs the charm)"
+    answer:
+      grade: keywords
+      require:
+        - LXD
+        - juju
+        - charmcraft
+    verify:
+      - kind: text_in_file
+        file: tox.ini
+        pattern: \[testenv:integration\]
+      - kind: path_exists
+        path: .charmcraft-channel
+    ci_verifiable: false
+    gated_by: >-
+      LXD + a Juju controller + charmcraft (channel pinned in
+      .charmcraft-channel) — the file's own prose says it cannot run without
+      that environment

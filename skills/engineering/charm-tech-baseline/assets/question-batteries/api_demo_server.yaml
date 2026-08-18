@@ -1,0 +1,127 @@
+# Question battery for canonical/api_demo_server AGENTS.md.
+# Schema: ../../references/question-batteries.md
+schema_version: 1
+repo: api_demo_server
+upstream: canonical/api_demo_server
+source:
+  agents_md_ref: chore/agents-md
+  agents_md_sha: 64de5286216bcae8e88022e340da0e8ee791f797
+  agents_md_sha256: 2e9924552dc340e268f425606e62d23e7e84287eaab42aecba9b1c415a8a3266
+  seeded_from: roadmap/26.10/repo-setup/agents-md-validation.md (api_demo_server table)
+  seeded_on: 2026-08-19
+
+entries:
+  - id: type-checker
+    question: Which type checker does this repo use?
+    classification: override
+    source_line: >-
+      **Type checking uses [`ty`](https://github.com/astral-sh/ty)**, not mypy or
+      pyright; it's pinned in the `dev` dependency group and run via `make lint`.
+    answer:
+      grade: keywords
+      require:
+        - ty
+      reject:
+        - mypy
+        - pyright
+    verify:
+      - kind: text_in_file
+        file: pyproject.toml
+        pattern: '"ty>='
+      - kind: text_in_file
+        file: Makefile
+        pattern: ty check
+    ci_verifiable: true
+    note: >-
+      An agent assumes mypy or pyright. `ty` is recent enough that this is a
+      confident-wrong-answer case rather than a slow-derivation one.
+
+  - id: no-unit-tests
+    question: Where are this repo's unit tests, and what does `make integration` actually do?
+    classification: cache
+    source_line: >-
+      There are no unit tests — `make integration` (`.scripts/integration-test.sh`)
+      brings the stack up with `docker compose`, exercises the create/add/list
+      endpoints over HTTP, and tears it down.
+    answer:
+      grade: judgement
+      rubric: >-
+        A correct reply must say there are no unit tests, and that the only test
+        target is a docker-compose smoke test over HTTP. A reply that merely
+        names `make integration` has not saved the fruitless hunt for a unit
+        suite, which is the entire value of the line — and keyword grading
+        cannot tell those two replies apart.
+    verify:
+      - kind: path_exists
+        path: .scripts/integration-test.sh
+      - kind: text_in_file
+        file: Makefile
+        pattern: "^integration:"
+    ci_verifiable: false
+    gated_by: Docker — no daemon in the check sandbox, and none in the Layer 1 runner
+
+  - id: exact-pinned-runtime-deps
+    question: How are this repo's runtime dependencies versioned, and may you relax them?
+    classification: override
+    source_line: >-
+      **Runtime deps are exact-pinned** in `pyproject.toml` (e.g. `fastapi==…`);
+      keep them pinned and let Dependabot bump them.
+    answer:
+      grade: keywords
+      require:
+        - pin
+        - Dependabot
+    verify:
+      - kind: text_in_file
+        file: pyproject.toml
+        pattern: fastapi==\d
+    ci_verifiable: true
+    note: >-
+      The failure this prevents is an agent "helpfully" loosening `==` to `>=`
+      during an unrelated change. Nothing in CI would reject that, so the line
+      is the only guard.
+
+  - id: lint-command
+    question: What command lints this repo?
+    classification: cache
+    source_line: "make lint # ruff check; ruff format --diff; ty check"
+    answer:
+      grade: command
+      expect: make lint
+    verify:
+      - kind: text_in_file
+        file: Makefile
+        pattern: "^lint:"
+    ci_verifiable: true
+
+  - id: format-command
+    question: What command formats this repo?
+    classification: cache
+    source_line: "make format # uv run ruff format; ruff check --fix"
+    answer:
+      grade: command
+      expect: make format
+    verify:
+      - kind: text_in_file
+        file: Makefile
+        pattern: "^format:"
+    ci_verifiable: true
+    note: >-
+      Verifiable per scope decisions §1 — tree-mutating commands are run, then
+      asserted diff-clean and restored, rather than gated. Settled but not yet
+      implemented in agents-md-content.py, which still routes `make format`
+      environment-gated.
+
+  - id: integration-command
+    question: What command runs this repo's tests?
+    classification: cache
+    source_line: "make integration # docker compose up + curl smoke checks (needs Docker)"
+    answer:
+      grade: command
+      expect: make integration
+    verify:
+      - kind: text_in_file
+        file: .github/workflows/integration-test.yaml
+        pattern: integration
+    ci_verifiable: false
+    gated_by: Docker daemon

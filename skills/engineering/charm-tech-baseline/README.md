@@ -33,7 +33,9 @@ references/                # static knowledge; loaded by the agent on demand
   decisions.md             # settled carve-outs
   skipped-tools.md         # tools we measured and skipped, with the basis
   open-investigations.md   # items waiting on external triggers
+  question-batteries.md    # AGENTS.md question-battery schema and rationale
 assets/                    # file templates used by fix scripts
+  question-batteries/      # per-repo AGENTS.md question batteries (YAML)
 scripts/                   # deterministic checks + fixes
   check.py                 # umbrella runner; emits JSON or markdown
   detect-tier.py           # remote-URL inspection → tier name
