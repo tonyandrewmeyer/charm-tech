@@ -8,20 +8,18 @@ The 26.10 cycle's baseline work produced a set of data: which SSDLC requirements
 
 This skill consolidates the cycle's output into a form an AI agent can load on demand and apply to one repo at a time.
 
-## How to use it
+## Where the code lives
+
+The checks and fixes are a Python package in [`canonical/charm-tech-code`](https://github.com/canonical/charm-tech-code), under `charm-tech-baseline`, and the skill drives it through `uvx`. What stays here is what an agent reads: when a check applies, what a finding means, which decisions are settled, and which tools were measured and skipped.
+
+The split is deliberate. Code that has to be run wants a lockfile, a test suite and CI, none of which a directory of loose scripts inside a skill was ever going to get. Prose that an agent reads wants to sit beside the other skills. Neither half is much use without the other, so each names the other.
 
 ```bash
-# audit
-scripts/check.py                                 # auto-detect tier, JSON output
-scripts/check.py --tier=personal --format=markdown
-scripts/check.py --only=security-md,dependabot
-
-# fix (mechanical only — agent must judge)
-scripts/fixes/add-security-md.py
-scripts/fixes/add-dependabot.py
+uvx --from "git+https://github.com/canonical/charm-tech-code@<40-char-sha>#subdirectory=charm-tech-baseline" \
+  charm-tech-baseline check --tier=product
 ```
 
-The skill itself is the canonical entry point — see [`SKILL.md`](SKILL.md). An AI agent loads `SKILL.md`, runs `check.py`, reads the JSON report, and uses the references to explain gaps and propose remediation.
+Pin the SHA. There is no release process in that repository and the SHA is the version, which is the same trust decision every pinned `uses: actions/checkout@<sha>` line already makes.
 
 ## Layout
 
@@ -34,26 +32,7 @@ references/                # static knowledge; loaded by the agent on demand
   skipped-tools.md         # tools we measured and skipped, with the basis
   open-investigations.md   # items waiting on external triggers
   question-batteries.md    # AGENTS.md question-battery schema and rationale
-assets/                    # file templates used by fix scripts
-  question-batteries/      # per-repo AGENTS.md question batteries (YAML)
-scripts/                   # deterministic checks + fixes
-  check.py                 # umbrella runner; emits JSON or markdown
-  detect-tier.py           # remote-URL inspection → tier name
-  checks/                  # one script per control
-  fixes/                   # one script per mechanical remediation
-  lib/                     # shared Python helpers (common.py)
-tests/                     # functional tests for the runner + a couple of checks
 ```
-
-## Tests
-
-A small functional suite exercises `detect-tier.py`, the `check.py` runner, and the checks with the most parsing logic. Each test writes a tiny fixture tree and runs the real script as a subprocess — no mocking.
-
-```bash
-uv run --with pytest pytest tests/
-```
-
-Coverage is deliberately shallow: one pass + one fail per exercised check. Add a test file under `tests/checks/` when a new check ships non-trivial parsing.
 
 ## Agent-generic
 
@@ -64,6 +43,6 @@ The skill follows the common [agent-skill format](https://agentskills.io) (YAML 
 When a future cycle's baseline work changes a decision:
 
 1. Update the relevant `references/*.md` entry (note the date and the new evidence).
-2. If a new check is warranted, add a script to `scripts/checks/` and a matching entry to `SKILL.md`'s coverage table.
+2. If a new check is warranted, add a module to `charm-tech-baseline/src/charm_tech_code/charm_tech_baseline/checks/` in `canonical/charm-tech-code`, with a test, and a matching entry in `SKILL.md`'s coverage table here. The two land as separate PRs, so add the check first and the table row once it has merged.
 3. If a previously-skipped tool now has measured value, update `skipped-tools.md` *with the new measurement*; do not silently re-recommend.
-4. Re-run `skill-scanner` and `scripts/validate_skill.py`.
+4. Re-run `skill-scanner` over this skill.

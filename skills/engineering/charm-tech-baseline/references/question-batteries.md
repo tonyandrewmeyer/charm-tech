@@ -5,9 +5,11 @@ that repo's `AGENTS.md` which earns its place, three things: the question an
 agent would be asked, the answer that can be checked without a human reading
 it, and the line the answer derives from.
 
-Batteries live in [`../assets/question-batteries/`](../assets/question-batteries/),
+Batteries ship with the `charm-tech-baseline` package in
+[`canonical/charm-tech-code`](https://github.com/canonical/charm-tech-code),
+under `src/charm_tech_code/charm_tech_baseline/assets/question-batteries/`,
 one file per repo, named `<repo>.yaml`. The
-[`agents-md-battery`](../scripts/checks/agents-md-battery.py) check validates a
+`agents-md-battery` check validates a
 battery against the repo it describes.
 
 Design source: `roadmap/26.10/repo-setup/agents-md-validation.md` in
@@ -45,7 +47,7 @@ un-checkable line, and the design doc calls it "not derivable from the tree at
 all" — but that is a statement about `verify`, not about `answer`. The answer
 is perfectly gradeable; what was in doubt was whether anything in the tree
 still pins it. (In pytest-jubilant's case something does — see
-`assets/question-batteries/pytest-jubilant.yaml`.) Keeping the axes separate
+`question-batteries/pytest-jubilant.yaml`.) Keeping the axes separate
 means neither judgement gets smuggled into the other.
 
 ## File shape
