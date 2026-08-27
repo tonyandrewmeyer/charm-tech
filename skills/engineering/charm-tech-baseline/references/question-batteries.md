@@ -191,12 +191,16 @@ the battery look complete while hiding the lines nothing ever checks.
 
 ## Coverage
 
-Batteries exist only for the four repos whose `AGENTS.md` has been through a
+Batteries exist only for the six repos whose `AGENTS.md` has been through a
 sweep and whose lines are classified in the design doc: pebble,
-pytest-jubilant, charm-ubuntu, api_demo_server. The other six repos have not
-been through the Layer 2 authoring gate, so there is nothing to seed from —
-the check reports `na` for a repo with no battery, which is the correct answer
+pytest-jubilant, charm-ubuntu, api_demo_server, charmlibs, concierge. The
+other four (operator, jubilant, charmhub-listing-review, hyrum) have not
+been through the Layer 2 authoring gate, so there is nothing to seed from.
+The check reports `na` for a repo with no battery, which is the correct answer
 rather than a gap.
+
+Ten repos, not eleven: `canonical/charm-tech` is out of repo-setup scope, so
+it is not counted here either.
 
 ## Adding or updating a battery
 
