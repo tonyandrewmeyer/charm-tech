@@ -41,7 +41,8 @@ file, only for a workflow that invokes zizmor).
 
 A repo with `actions/checkout@v4`, `pypa/gh-action-pypi-publish@release/v1`,
 or `canonical/foo@v2` **is** a gap. A repo with all `uses:` refs pinned
-to 40-char SHAs is not.
+to 40-char SHAs is not. The `gha-sha-pinning` check flags any non-SHA
+`uses:` ref.
 
 ## Tool pinning — `pyproject.toml` is the source of truth
 

@@ -104,12 +104,3 @@ infra). Not a `fail` in the audit report on Go repos today.
 
 A check should not flag pebble or concierge for missing a Go-side
 release-age control in the 26.10 cycle.
-
-## `pypa/*` ref-pin posture — resolved
-
-**Resolved:** the team took option (a) — tighten to SHA-pin — and
-extended it to the whole allowlist (`actions/*`, `github/*`, `pypa/*`,
-`canonical/*`). Every third-party action pins to a SHA, no exceptions.
-See [`decisions.md`](decisions.md). `.github/zizmor.yaml` config files
-are no longer needed; the `gha-sha-pinning` check
-flags any non-SHA `uses:` ref.
