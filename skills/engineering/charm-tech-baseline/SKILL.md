@@ -28,6 +28,12 @@ Skip when:
 
 ## How to use
 
+Three things need to be present before step 1: `uvx`, an authenticated
+`gh` (tier detection and `immutable-releases` shell out to it), and
+`git` with the repository checked out and an `origin` remote. The
+package's own dependencies are resolved by `uvx` and are not your
+problem.
+
 The checks and fixes are a Python package in
 [`canonical/charm-tech-code`](https://github.com/canonical/charm-tech-code),
 under `charm-tech-baseline`; this skill is the knowledge that makes its output
