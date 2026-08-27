@@ -1,6 +1,6 @@
 ---
 name: charm-tech-baseline
-description: Audit a repository against the Canonical Charm Tech baseline — SSDLC compliance, supply-chain hygiene, and best-of-class extras — and explain or fix the gaps. Tier-aware (product / canonical / personal), agent-generic, ships deterministic check + fix scripts.
+description: Audit a repository against the Canonical Charm Tech baseline — SSDLC compliance, supply-chain hygiene, and best-of-class extras — and explain or fix the gaps. Tier-aware (product / canonical / personal), agent-generic; drives the deterministic check and fix package in `canonical/charm-tech-code`.
 license: CC-BY-4.0
 metadata:
   source: Canonical Charm Tech, 26.10 cycle
