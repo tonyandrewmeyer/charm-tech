@@ -1,6 +1,7 @@
 ---
 name: charm-tech-baseline
 description: Audit a repository against the Canonical Charm Tech baseline — SSDLC compliance, supply-chain hygiene, and best-of-class extras — and explain or fix the gaps. Tier-aware (product / canonical / personal), agent-generic, ships deterministic check + fix scripts.
+license: CC-BY-4.0
 metadata:
   source: Canonical Charm Tech, 26.10 cycle
   audience: any AI coding agent operating on a single repo at a time
