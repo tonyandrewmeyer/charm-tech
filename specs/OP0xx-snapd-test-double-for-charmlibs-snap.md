@@ -574,18 +574,7 @@ The fixture already wraps the whole test, which covers anything wrapping `Contex
 
 The double is built as a new `charmlibs-snap-testing` distribution on the [`feat/snap-testing-double-squashed`](https://github.com/tonyandrewmeyer/charmlibs/tree/feat/snap-testing-double-squashed/snap/testing) branch of a `charmlibs` fork, as two commits: the package, then `snap`’s unit tests moved onto it. There’s no `charmlibs` PR yet.
 
-On that branch, `snap`’s unit tests pass through the double (857 passed, 14 skipped), as does the double’s own suite (147). Moving the unit tests onto the double found two places where the double and the library disagreed, and both are fixed. Every example in this spec is also run against the branch.
-
-`snap`’s full functional suite was run against snapd 2.76 in a VM (501 passed). Then each place where the double and snapd might disagree was checked by sending the same requests to the snapd socket directly. Of five suspects, four were bugs in the double, all now fixed:
-
-* With a store described, a refresh with no channel used `latest/stable` instead of the channel the snap was tracking.
-* A service action on a snap that isn’t installed raised the wrong error kind and message.
-* `connect` accepted an empty plug snap or plug name.
-* `system` and `core` configuration went out of sync when a `core` snap was in the starting state, and survived `core` being removed. (Checking the second half needed a throwaway container, since `core` can’t be removed from under a running snapd.)
-
-The fifth was the double being right. The two behaviours left out in [Scope for a first release](#scope-for-a-first-release) were found in the same check.
-
-The public functions turn the first three bugs into `NotInstalledError`, so a charm wouldn’t have seen them. The double’s own tests for them check the raw endpoint responses, which is what the socket check compared.
+On that branch, `snap`’s unit tests pass through the double (857 passed, 14 skipped), as does the double’s own suite (147), and `snap`’s functional suite passes against snapd 2.76 (501 passed). Every example in this spec is also run against the branch.
 
 ### Alternatives
 
