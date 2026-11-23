@@ -24,7 +24,7 @@ def test_install_handler(snapd):
     assert state_out.unit_status == ops.ActiveStatus()
 ```
 
-The double is `charmlibs.snap`'s testing package, `charmlibs-snap-testing`, and provides the `mocked()` that OP093 asks every testing package for, which is how OP089's `Juju` picks it up. There's a working implementation (see [Further Information](#further-information)).
+The double is `charmlibs.snap`'s testing package, `charmlibs-snap-testing`. It implements OP093's `mocked()`, which OP089's `Juju` uses to pick it up. There's a working implementation (see [Further Information](#further-information)).
 
 ## Rationale
 
@@ -447,7 +447,7 @@ A reconcile-style charm will probably only check `installed`, and a charm that h
 
 ### `mocked`
 
-OP093 asks every testing package for a `mocked()`: a reentrant context manager that takes no arguments and mocks out the library's internals. snap isn't an interface library, so `snap_testing` has no `provider` or `requirer`, only `mocked()`.
+Under OP093, every testing package has a `mocked()`: a reentrant context manager that takes no arguments and mocks out the library's internals. snap isn't an interface library, so `snap_testing` has no `provider` or `requirer`, only `mocked()`.
 
 `snap_testing.mocked()` is a small wrapper around `Snapd`. If a `Snapd` is already open, `mocked()` joins it, so the code under test talks to the test's `Snapd`. If not, it opens a new empty one, with no store described, for as long as its own `with` lasts:
 
