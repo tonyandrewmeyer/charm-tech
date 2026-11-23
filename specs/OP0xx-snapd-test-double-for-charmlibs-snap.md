@@ -8,9 +8,9 @@
 
 ## Abstract
 
-`charmlibs.snap` 2.0 talks to snapd over a unix socket. There's no snapd on a test runner, so the first `charmlibs.snap` call in a machine charm's test raises `snap.ConnectionError`, and the charm errors out before it gets to anything the test wanted to check. At the moment the only way around that is to monkeypatch the library.
+`charmlibs.snap` 2.0 talks to snapd over a unix socket. There’s no snapd on a test runner, so the first `charmlibs.snap` call in a machine charm’s test raises `snap.ConnectionError`, and the charm errors out before it gets to anything the test wanted to check. At the moment the only way around that is to monkeypatch the library.
 
-This spec proposes `Snapd`, a stateful fake snapd that replaces the library's client functions and leaves the rest of the library running as it does in production. A test sets up what's installed (and, if it cares, what's in the store), runs the charm, and then checks what's installed now and what the charm asked snapd to do:
+This spec proposes `Snapd`, a stateful fake snapd that replaces the library’s client functions and leaves the rest of the library running as it does in production. A test sets up what’s installed (and, if it cares, what’s in the store), runs the charm, and then checks what’s installed now and what the charm asked snapd to do:
 
 ```python
 from charmlibs import snap_testing
@@ -24,7 +24,7 @@ def test_install_handler(snapd):
     assert state_out.unit_status == ops.ActiveStatus()
 ```
 
-The double is `charmlibs.snap`'s testing package, `charmlibs-snap-testing`. It implements OP093's `mocked()`, which OP089's `Juju` uses to pick it up. There's a working implementation (see [Further Information](#further-information)).
+The double is `charmlibs.snap`’s testing package, `charmlibs-snap-testing`. It implements OP093’s `mocked()`, which OP089’s `Juju` uses to pick it up. There’s a working implementation (see [Further Information](#further-information)).
 
 ## Rationale
 
@@ -38,15 +38,15 @@ def test_install(monkeypatch):
     ctx.run(ctx.on.install(), ops.testing.State())
 ```
 
-This gets the test running, but it checks very little. A charm that calls `snap.ensure_installed('prometheus', '2/stable', 7)` passes, even though the real library raises `TypeError` (`revision` is keyword-only), and the same goes for a snap name the library would reject with `ValueError`. The stub has no state, so there's no way to test a charm that installs something and then reads it back. Each charm also ends up writing its own version of the stub, and they tend to cover less as they get copied around.
+This gets the test running, but it checks very little. A charm that calls `snap.ensure_installed('prometheus', '2/stable', 7)` passes, even though the real library raises `TypeError` (`revision` is keyword-only), and the same goes for a snap name the library would reject with `ValueError`. The stub has no state, so there’s no way to test a charm that installs something and then reads it back. Each charm also ends up writing its own version of the stub, and they tend to cover less as they get copied around.
 
-The most valuable tests are often the ones a stub like this can't express at all: snapd not being reachable, a snap that isn't in the store, or a `post-refresh` hook failing part of the way through a refresh.
+The most valuable tests are often the ones a stub like this can’t express at all: snapd not being reachable, a snap that isn’t in the store, or a `post-refresh` hook failing part of the way through a refresh.
 
 ## Specification
 
 ### Packaging
 
-The double is a separate distribution, `charmlibs-snap-testing`, in the `charmlibs` monorepo at `snap/testing/`. It follows the layout and version lock from OP077, and the API from OP093. It would be the first testing package for a library that isn't an interface library.
+The double is a separate distribution, `charmlibs-snap-testing`, in the `charmlibs` monorepo at `snap/testing/`. It follows the layout and version lock from OP077, and the API from OP093. It would be the first testing package for a library that isn’t an interface library.
 
 A charm adds the `testing` extra to its test dependencies, which keeps the two versions in step:
 
@@ -65,15 +65,15 @@ and imports it as:
 from charmlibs import snap_testing
 ```
 
-It depends on `charmlibs-snap` (at the same version) and nothing else. The OP077 template also has `ops[testing]`, because interface testing packages return stand-in charms (OP093's `provider` and `requirer`). A fake snapd doesn't return anything from ops, and leaving ops out means it works under `ops.testing`, under `Harness`, or with no ops at all.
+It depends on `charmlibs-snap` (at the same version) and nothing else. The OP077 template also has `ops[testing]`, because interface testing packages return stand-in charms (OP093’s `provider` and `requirer`). A fake snapd doesn’t return anything from ops, and leaving ops out means it works under `ops.testing`, under `Harness`, or with no ops at all.
 
-Installing the package registers a `snapd` pytest fixture through a `pytest11` entry point, so there's nothing to add to `conftest.py`.
+Installing the package registers a `snapd` pytest fixture through a `pytest11` entry point, so there’s nothing to add to `conftest.py`.
 
-The double patches functions in the library's private `_client` module, even though it's a separate distribution (see [Alternatives](#alternatives) for why). `charmlibs.snap` should document that `charmlibs-snap-testing` relies on those functions, so that they aren't changed without updating the double.
+The double patches functions in the library’s private `_client` module, even though it’s a separate distribution (see [Alternatives](#alternatives) for why). `charmlibs.snap` should document that `charmlibs-snap-testing` relies on those functions, so that they aren’t changed without updating the double.
 
 ### The API
 
-Here's everything the package exports, all from `charmlibs.snap_testing`:
+Here’s everything the package exports, all from `charmlibs.snap_testing`:
 
 ```python
 class Snapd:
@@ -140,17 +140,17 @@ class SnapStateValidationError(Exception): ...
 
 The `Operation` subclasses that go in `history` are listed in [Checking what the charm did](#checking-what-the-charm-did).
 
-There's also the `snapd` fixture, which is a fresh, empty `Snapd` that's open for the whole test.
+There’s also the `snapd` fixture, which is a fresh, empty `Snapd` that’s open for the whole test.
 
 ### Where the double intercepts
 
 Entering a `Snapd` replaces the four functions in `charmlibs.snap._client` that do I/O (`get`, `get_logs`, `post`, and `put`) with an in-memory model of the snapd REST endpoints the library uses. Leaving it puts the originals back.
 
-The rest of the library runs unchanged, including `ensure_installed`'s logic for deciding whether to install or refresh, validating snap names, normalising and resolving channels, parsing `InstalledInfo`, and turning snapd's error kinds into the library's exceptions (including the extra requests the library makes to tell `NotInstalledError` and `NotInStoreError` apart). So a charm test exercises the same library code that runs on a real machine.
+The rest of the library runs unchanged, including `ensure_installed`’s logic for deciding whether to install or refresh, validating snap names, normalising and resolving channels, parsing `InstalledInfo`, and turning snapd’s error kinds into the library’s exceptions (including the extra requests the library makes to tell `NotInstalledError` and `NotInStoreError` apart). So a charm test exercises the same library code that runs on a real machine.
 
-The library's own unit tests already patched these four functions, with canned responses written out for each test. The difference here is that the responses come from a model that changes as the charm acts.
+The library’s own unit tests already patched these four functions, with canned responses written out for each test. The difference here is that the responses come from a model that changes as the charm acts.
 
-A `Snapd` is reentrant, as OP093 requires: the fixture and the test that uses it can both open it, and `Juju` can open `mocked()` inside it. It's single-use, though. Opening it again after its outermost `with` has finished raises `RuntimeError`, so state can't leak from one test into the next:
+A `Snapd` is reentrant, as OP093 requires: the fixture and the test that uses it can both open it, and `Juju` can open `mocked()` inside it. It’s single-use, though. Opening it again after its outermost `with` has finished raises `RuntimeError`, so state can’t leak from one test into the next:
 
 ```python
 def test_fixture_and_with_block_nest(snapd):
@@ -170,7 +170,7 @@ def test_reentry_after_exit_raises():
 
 ### Setting up the machine
 
-If the starting state doesn't matter, the fixture gives an empty machine with no store described, so any snap can be installed from any channel:
+If the starting state doesn’t matter, the fixture gives an empty machine with no store described, so any snap can be installed from any channel:
 
 ```python
 def test_workload_manager(snapd):
@@ -178,7 +178,7 @@ def test_workload_manager(snapd):
     assert snapd.installed['prometheus'].channel == '2/edge'
 ```
 
-When it does matter, pass the installed snaps to `Snapd`. They're the same frozen `Snap` objects that `installed` gives back, so a test can describe the state it expects at the end in the same terms it used for the start:
+When it does matter, pass the installed snaps to `Snapd`. They’re the same frozen `Snap` objects that `installed` gives back, so a test can describe the state it expects at the end in the same terms it used for the start:
 
 ```python
 def test_config_changed_refreshes_channel():
@@ -245,7 +245,7 @@ def test_disconnect():
     assert snapd.connections == set()
 ```
 
-A snap installed with no store described has no services. `start`, `stop` and `restart` on a service the snap doesn't have raise `AppNotFoundError`, and a hand-written stub never catches that mistake. If the double invented services by default, it wouldn't catch it either, unless every test remembered to turn that off:
+A snap installed with no store described has no services. `start`, `stop` and `restart` on a service the snap doesn’t have raise `AppNotFoundError`, and a hand-written stub never catches that mistake. If the double invented services by default, it wouldn’t catch it either, unless every test remembered to turn that off:
 
 ```python
 def test_service_not_shipped():
@@ -254,9 +254,9 @@ def test_service_not_shipped():
             snap.start('prometheus', 'prometheus')
 ```
 
-A test that's about services says which ones exist, either with `services=` on the `Snap`, as above, or by describing the store (next).
+A test that’s about services says which ones exist, either with `services=` on the `Snap`, as above, or by describing the store (next).
 
-`Snapd` checks what it's given when it's constructed, much like Scenario's consistency checker, so a starting state that real snapd could never be in fails immediately with `SnapStateValidationError`, not with something confusing several calls later. That includes malformed snap names and channels, the same snap listed twice, an alias for an app the snap doesn't have, a connection to a snap that isn't installed, and a `Failure` for an action that doesn't exist:
+`Snapd` checks what it’s given when it’s constructed, much like Scenario’s consistency checker, so a starting state that real snapd could never be in fails immediately with `SnapStateValidationError`, not with something confusing several calls later. That includes malformed snap names and channels, the same snap listed twice, an alias for an app the snap doesn’t have, a connection to a snap that isn’t installed, and a `Failure` for an action that doesn’t exist:
 
 ```python
 >>> snap_testing.Snapd([snap_testing.Snap('prometheus', channel='2/nightly')])
@@ -269,7 +269,7 @@ not in its services []
 
 ### The store
 
-By default there's no store, and any snap installs from any channel. Passing `store=` changes that: the store then has only what the test put in it, and an install takes its revision, version and services from there.
+By default there’s no store, and any snap installs from any channel. Passing `store=` changes that: the store then has only what the test put in it, and an install takes its revision, version and services from there.
 
 ```python
 def test_install_starts_prometheus():
@@ -292,12 +292,12 @@ With a store described, the double raises the same errors snapd would:
 
 | The charm asks for | The library raises |
 | --- | --- |
-| a snap the store doesn't have | `NotInStoreError` |
-| a channel the snap doesn't have | `ChannelNotAvailableError` |
-| a revision that isn't on any of the snap's channels | `RevisionNotAvailableError` |
+| a snap the store doesn’t have | `NotInStoreError` |
+| a channel the snap doesn’t have | `ChannelNotAvailableError` |
+| a revision that isn’t on any of the snap’s channels | `RevisionNotAvailableError` |
 | a classic snap, without `classic=True` | `NeedsClassicError` |
 
-A refresh to the revision that's already installed finds nothing to do.
+A refresh to the revision that’s already installed finds nothing to do.
 
 ```python
 def test_unknown_snap_blocks():
@@ -324,7 +324,7 @@ def test_classic_snap():
 
 ### Injected failures
 
-Some failures can't be described as store contents, so a test can ask for them directly with `Failure`. The `action` is the library function's name (`'install'`, `'refresh'`, `'set'`, and so on), and `'*'` matches every action. A failure can be limited to one snap and to a number of times, and the error is any `charmlibs.snap.Error`, raised as given.
+Some failures can’t be described as store contents, so a test can ask for them directly with `Failure`. The `action` is the library function’s name (`'install'`, `'refresh'`, `'set'`, and so on), and `'*'` matches every action. A failure can be limited to one snap and to a number of times, and the error is any `charmlibs.snap.Error`, raised as given.
 
 snapd not being reachable at all looks like this to a charm:
 
@@ -420,7 +420,7 @@ Reads are recorded too, so a charm that only writes configuration when it has ch
     ]
 ```
 
-There's one operation type for each library function that reads or changes snap state, and each takes the snap name first:
+There’s one operation type for each library function that reads or changes snap state, and each takes the snap name first:
 
 ```python
 Install(snap, channel, revision, classic)
@@ -441,15 +441,15 @@ Unalias(snap, alias)
 Logs(snap, limit)
 ```
 
-`list_one` isn't recorded. `ensure_installed` calls it every time, so it would show up in every assertion without saying anything. Only operations that worked are recorded, and an operation that didn't need to do anything (installing a snap that's already there, for example) isn't recorded either. A failure the test injected shows up in what the charm did next, not in `history`.
+`list_one` isn’t recorded. `ensure_installed` calls it every time, so it would show up in every assertion without saying anything. Only operations that worked are recorded, and an operation that didn’t need to do anything (installing a snap that’s already there, for example) isn’t recorded either. A failure the test injected shows up in what the charm did next, not in `history`.
 
 A reconcile-style charm will probably only check `installed`, and a charm that has to do things in a particular order will mostly check `history`. Either is fine, and so is both.
 
 ### `mocked`
 
-Under OP093, every testing package has a `mocked()`: a reentrant context manager that takes no arguments and mocks out the library's internals. snap isn't an interface library, so `snap_testing` has no `provider` or `requirer`, only `mocked()`.
+Under OP093, every testing package has a `mocked()`: a reentrant context manager that takes no arguments and mocks out the library’s internals. snap isn’t an interface library, so `snap_testing` has no `provider` or `requirer`, only `mocked()`.
 
-`snap_testing.mocked()` is a small wrapper around `Snapd`. If a `Snapd` is already open, `mocked()` joins it, so the code under test talks to the test's `Snapd`. If not, it opens a new empty one, with no store described, for as long as its own `with` lasts:
+`snap_testing.mocked()` is a small wrapper around `Snapd`. If a `Snapd` is already open, `mocked()` joins it, so the code under test talks to the test’s `Snapd`. If not, it opens a new empty one, with no store described, for as long as its own `with` lasts:
 
 ```python
 def test_mocked_alone_is_per_dispatch():
@@ -461,7 +461,7 @@ def test_mocked_alone_is_per_dispatch():
         assert c.installed == {}  # A new, empty Snapd.
 ```
 
-OP089's `Juju` opens each testing package's `mocked()` around every dispatch. A test that wants snap state to carry from one dispatch to the next, or wants to check it afterwards, opens a `Snapd` around the whole test (the fixture is the easiest way), and `Juju`'s `mocked()` calls join it:
+OP089’s `Juju` opens each testing package’s `mocked()` around every dispatch. A test that wants snap state to carry from one dispatch to the next, or wants to check it afterwards, opens a `Snapd` around the whole test (the fixture is the easiest way), and `Juju`’s `mocked()` calls join it:
 
 ```python
 def test_prometheus_installs_on_deploy(snapd):
@@ -472,11 +472,11 @@ def test_prometheus_installs_on_deploy(snapd):
     assert snapd.installed['prometheus'].channel == '2/stable'
 ```
 
-Without an outer `Snapd`, every dispatch starts from an empty machine, so a snap installed in `install` has gone by the next hook. That's fine for a charm whose use of snaps isn't what the test is about.
+Without an outer `Snapd`, every dispatch starts from an empty machine, so a snap installed in `install` has gone by the next hook. That’s fine for a charm whose use of snaps isn’t what the test is about.
 
-That does mean the result depends on whether the scope is opened once per test or once per dispatch, which is the question OP093 has open about scope-insensitivity. This spec doesn't try to settle it. Keeping the state in the scope seems the most sensible choice for now, with an outer `Snapd` being how a test chooses how long that state lives. If OP093 decides `mocked()` has to be scope-insensitive, the bare `mocked()` would need to keep its state somewhere else (keyed by the unit, probably), and `Snapd` wouldn't change.
+That does mean the result depends on whether the scope is opened once per test or once per dispatch, which is the question OP093 has open about scope-insensitivity. This spec doesn’t try to settle it. Keeping the state in the scope seems the most sensible choice for now, with an outer `Snapd` being how a test chooses how long that state lives. If OP093 decides `mocked()` has to be scope-insensitive, the bare `mocked()` would need to keep its state somewhere else (keyed by the unit, probably), and `Snapd` wouldn’t change.
 
-`mocked()` has no arguments because a test that cares about the starting state, the store, or failures also wants something to check afterwards, and that's what a `Snapd` is for.
+`mocked()` has no arguments because a test that cares about the starting state, the store, or failures also wants something to check afterwards, and that’s what a `Snapd` is for.
 
 ### Without `ops.testing`
 
@@ -499,14 +499,14 @@ and with plain functions that a charm has moved out of its event handlers, like 
 
 ### Behaviour the double reproduces
 
-Because the real library runs on top of the double, the edge cases behave as they do on a real machine. These are the ones a hand-written stub most often gets wrong, and each has a test, either in the double's own suite or in `snap`'s converted unit tests (see [Avoiding drift](#avoiding-drift)).
+Because the real library runs on top of the double, the edge cases behave as they do on a real machine. These are the ones a hand-written stub most often gets wrong, and each has a test, either in the double’s own suite or in `snap`’s converted unit tests (see [Avoiding drift](#avoiding-drift)).
 
-* `install` of a snap that's already installed returns a falsy value instead of raising, as do `remove` of a snap that isn't installed and (with a store described) `refresh` when there's nothing newer.
-* `connect` of a plug and slot that are already connected does nothing. `disconnect` of a plug and slot that aren't connected raises `APIError`, but a `disconnect` that names only one side and matches nothing doesn't raise.
-* `hold`, `refresh`, `start`, `get` and the other per-snap functions raise `NotInstalledError` for a snap that isn't installed. snapd's answers to most of these are ambiguous, so the library makes extra requests to work out which error it is, and the double answers those the same way snapd does.
-* `get_one` for a key the snap doesn't have raises `OptionNotFoundError`.
-* `start`, `stop` or `restart` for a service the snap doesn't have (or for a snap with no services) raises `AppNotFoundError`.
-* `alias` for an app the snap doesn't have, or for an alias another snap already has, raises `ChangeError` when the asynchronous change fails, as it does with snapd, not when the request is made.
+* `install` of a snap that’s already installed returns a falsy value instead of raising, as do `remove` of a snap that isn’t installed and (with a store described) `refresh` when there’s nothing newer.
+* `connect` of a plug and slot that are already connected does nothing. `disconnect` of a plug and slot that aren’t connected raises `APIError`, but a `disconnect` that names only one side and matches nothing doesn’t raise.
+* `hold`, `refresh`, `start`, `get` and the other per-snap functions raise `NotInstalledError` for a snap that isn’t installed. snapd’s answers to most of these are ambiguous, so the library makes extra requests to work out which error it is, and the double answers those the same way snapd does.
+* `get_one` for a key the snap doesn’t have raises `OptionNotFoundError`.
+* `start`, `stop` or `restart` for a service the snap doesn’t have (or for a snap with no services) raises `AppNotFoundError`.
+* `alias` for an app the snap doesn’t have, or for an alias another snap already has, raises `ChangeError` when the asynchronous change fails, as it does with snapd, not when the request is made.
 * `system` and `core` share one configuration, whether or not a `core` snap is installed, and removing `core` drops what was set on it.
 
 ```python
@@ -531,42 +531,42 @@ def test_alias_unknown_app():
 
 `ensure_installed`, `install`, `refresh`, `remove`, `list_one`, `hold`, `unhold`, `start`, `stop`, `restart`, `get`, `get_one`, `set`, `unset`, `connect`, `disconnect`, `alias`, and `unalias` are all modelled. `logs` returns the entries the test gave each `Snap`, without applying `limit`. A charm that reads snap logs is usually passing them on somewhere, so the test will want to control exactly what it gets.
 
-A request to an endpoint the double doesn't model raises `NotImplementedError` naming the endpoint. If a charm uses something the double doesn't cover, its test should fail and say why, not pass when it shouldn't:
+A request to an endpoint the double doesn’t model raises `NotImplementedError` naming the endpoint. If a charm uses something the double doesn’t cover, its test should fail and say why, not pass when it shouldn’t:
 
 ```python
 NotImplementedError: charmlibs-snap-testing does not model GET '/v2/snapshots'
 ```
 
-Two snapd behaviours are left out deliberately. Both depend on the machine, so there's no value the double could return that would be right.
+Two snapd behaviours are left out deliberately. Both depend on the machine, so there’s no value the double could return that would be right.
 
-Real snapd rejects an unknown system option (`snap.set('system', {'totally.bogus.key': 'x'})`) with a failed change. Doing the same would mean carrying a copy of snapd's option schema, which is large, changes between snapd releases, and isn't something charm tests check. The double accepts any key.
+Real snapd rejects an unknown system option (`snap.set('system', {'totally.bogus.key': 'x'})`) with a failed change. Doing the same would mean carrying a copy of snapd’s option schema, which is large, changes between snapd releases, and isn’t something charm tests check. The double accepts any key.
 
-On real snapd, `snap.get('system')` with no keys always includes values snapd works out from the machine, such as the hostname and timezone. Any value the double invented would differ from every real machine anyway, and a charm test that passed because of an invented hostname wouldn't be testing much. The double returns only what's been set.
+On real snapd, `snap.get('system')` with no keys always includes values snapd works out from the machine, such as the hostname and timezone. Any value the double invented would differ from every real machine anyway, and a charm test that passed because of an invented hostname wouldn’t be testing much. The double returns only what’s been set.
 
-The library's own socket handling (retrying the connection, the request timeout, and polling asynchronous changes) is also out of scope. That's the library's responsibility, not the charm's, and the library's functional tests cover it.
+The library’s own socket handling (retrying the connection, the request timeout, and polling asynchronous changes) is also out of scope. That’s the library’s responsibility, not the charm’s, and the library’s functional tests cover it.
 
 ### Avoiding drift
 
-The risk with any test double is that it drifts away from the real thing, and charm tests keep passing against behaviour real snapd doesn't have. There are two things in place to catch that.
+The risk with any test double is that it drifts away from the real thing, and charm tests keep passing against behaviour real snapd doesn’t have. There are two things in place to catch that.
 
-First, `snap`'s own unit tests run through the double. Every test in `snap/tests/unit/` that checks an outcome was moved from a mocked client with canned responses to a `Snapd`, so each change to `charmlibs.snap` is tested against the double in the same CI run, and a library change the double doesn't keep up with fails there rather than in some charm's tests. By file:
+First, `snap`’s own unit tests run through the double. Every test in `snap/tests/unit/` that checks an outcome was moved from a mocked client with canned responses to a `Snapd`, so each change to `charmlibs.snap` is tested against the double in the same CI run, and a library change the double doesn’t keep up with fails there rather than in some charm’s tests. By file:
 
-* `test_not_found.py`: all converted. An empty `Snapd` gives "not found" for every public function, through the same extra requests a charm test goes through.
+* `test_not_found.py`: all converted. An empty `Snapd` gives “not found” for every public function, through the same extra requests a charm test goes through.
 * `test_snapd_snaps.py`, `test_snapd_apps.py`, `test_snapd_conf.py`, and `test_snapd_logs.py`: every outcome test converted.
 * `test_snapd_interfaces.py`: the tests for the extra requests and for errors converted. The rest check the shape of the request.
 * `test_client.py`, `test_utils.py`, `test_functions.py`, `test_empty_or_blank.py`, `test_errors.py`, and `test_snapd_aliases.py`: unchanged.
 
-The unchanged tests check the exact request the library sends, or argument validation that fails before any request is made. The double can say what's installed and what was raised, but not what a request body looked like, so those tests keep their mocks. Converting the others turned up two places where the double and the library disagreed, and both are fixed.
+The unchanged tests check the exact request the library sends, or argument validation that fails before any request is made. The double can say what’s installed and what was raised, but not what a request body looked like, so those tests keep their mocks. Converting the others turned up two places where the double and the library disagreed, and both are fixed.
 
 Second, the functional suite is the reference. `snap/tests/functional/` runs against real snapd, and if the double and a functional test disagree, the double is wrong. What that found for the implementation is under [Further Information](#further-information).
 
 ### Relationship to `ops.testing`
 
-The double works with `ops.testing` but doesn't depend on it or plug into it.
+The double works with `ops.testing` but doesn’t depend on it or plug into it.
 
-`ops.testing.State` models what Juju owns. Snaps are machine state that Juju knows nothing about, so `State(snaps=...)` doesn't belong there (and if it did, so would apt packages and systemd units). `Context` has no way for a library to add its own state or mocks to a run, so with `Context` the double wraps `Context.run()` instead of living inside it. That also means the same object works under `Harness` and in plain pytest.
+`ops.testing.State` models what Juju owns. Snaps are machine state that Juju knows nothing about, so `State(snaps=...)` doesn’t belong there (and if it did, so would apt packages and systemd units). `Context` has no way for a library to add its own state or mocks to a run, so with `Context` the double wraps `Context.run()` instead of living inside it. That also means the same object works under `Harness` and in plain pytest.
 
-OP089's `Juju` does have a hook for this, OP093's `mocked()`, and `snap_testing.mocked()` uses it (see [`mocked`](#mocked)).
+OP089’s `Juju` does have a hook for this, OP093’s `mocked()`, and `snap_testing.mocked()` uses it (see [`mocked`](#mocked)).
 
 The fixture already wraps the whole test, which covers anything wrapping `Context.run()` would. The gap is a test that calls `Context.run()` several times with the same `Snapd`, where `history` keeps growing across the runs. If that turns out to be a problem, it can be solved in `charmlibs-snap-testing` without any change to ops, for example by letting a test mark a point in `history` and ask for what came after it.
 
@@ -574,34 +574,34 @@ The fixture already wraps the whole test, which covers anything wrapping `Contex
 
 ### Implementation
 
-The double is built as a new `charmlibs-snap-testing` distribution on the [`feat/snap-testing-double-squashed`](https://github.com/tonyandrewmeyer/charmlibs/tree/feat/snap-testing-double-squashed/snap/testing) branch of a `charmlibs` fork, as two commits: the package, then `snap`'s unit tests moved onto it. There's no `charmlibs` PR yet.
+The double is built as a new `charmlibs-snap-testing` distribution on the [`feat/snap-testing-double-squashed`](https://github.com/tonyandrewmeyer/charmlibs/tree/feat/snap-testing-double-squashed/snap/testing) branch of a `charmlibs` fork, as two commits: the package, then `snap`’s unit tests moved onto it. There’s no `charmlibs` PR yet.
 
-On that branch, `snap`'s unit tests pass through the double (857 passed, 14 skipped), as does the double's own suite (147). Every example in this spec is also run against the branch.
+On that branch, `snap`’s unit tests pass through the double (857 passed, 14 skipped), as does the double’s own suite (147). Every example in this spec is also run against the branch.
 
-`snap`'s full functional suite was run against snapd 2.76 in a VM (501 passed). Then each place where the double and snapd might disagree was checked by sending the same requests to the snapd socket directly. Of five suspects, four were bugs in the double, all now fixed:
+`snap`’s full functional suite was run against snapd 2.76 in a VM (501 passed). Then each place where the double and snapd might disagree was checked by sending the same requests to the snapd socket directly. Of five suspects, four were bugs in the double, all now fixed:
 
 * With a store described, a refresh with no channel used `latest/stable` instead of the channel the snap was tracking.
-* A service action on a snap that isn't installed raised the wrong error kind and message.
+* A service action on a snap that isn’t installed raised the wrong error kind and message.
 * `connect` accepted an empty plug snap or plug name.
-* `system` and `core` configuration went out of sync when a `core` snap was in the starting state, and survived `core` being removed. (Checking the second half needed a throwaway container, since `core` can't be removed from under a running snapd.)
+* `system` and `core` configuration went out of sync when a `core` snap was in the starting state, and survived `core` being removed. (Checking the second half needed a throwaway container, since `core` can’t be removed from under a running snapd.)
 
 The fifth was the double being right. The two behaviours left out in [Scope for a first release](#scope-for-a-first-release) were found in the same check.
 
-The public functions turn the first three bugs into `NotInstalledError`, so a charm wouldn't have seen them. The double's own tests for them check the raw endpoint responses, which is what the socket check compared.
+The public functions turn the first three bugs into `NotInstalledError`, so a charm wouldn’t have seen them. The double’s own tests for them check the raw endpoint responses, which is what the socket check compared.
 
 ### Alternatives
 
-Monkeypatching the public functions in each charm's tests is what charms do now, and [Rationale](#rationale) covers why it isn't enough.
+Monkeypatching the public functions in each charm’s tests is what charms do now, and [Rationale](#rationale) covers why it isn’t enough.
 
-A submodule, `charmlibs.snap.testing`, was also considered. That would avoid one distribution reaching into another's private module, but it would ship a fake snapd inside every charm that uses `charmlibs.snap`, and it wouldn't get the CI check that keeps a `-testing` distribution at the same version as its library. The private module belongs to the same repository and the same people as the double, and with the versions locked together the two can't drift apart without CI noticing.
+A submodule, `charmlibs.snap.testing`, was also considered. That would avoid one distribution reaching into another’s private module, but it would ship a fake snapd inside every charm that uses `charmlibs.snap`, and it wouldn’t get the CI check that keeps a `-testing` distribution at the same version as its library. The private module belongs to the same repository and the same people as the double, and with the versions locked together the two can’t drift apart without CI noticing.
 
 ### Related specs
 
 * OP077 (charm library testing) sets out the layout, the `[testing]` extra, and the version lock that `charmlibs-snap-testing` follows.
 * OP093 (charmlibs testing packages API) defines the testing package API, including the `mocked()` that `snap_testing` provides, and has the open question about mocking scope mentioned in [`mocked`](#mocked).
-* OP089 (multiple-charm state transition tests) defines `Juju`, which opens each testing package's `mocked()` around every dispatch.
+* OP089 (multiple-charm state transition tests) defines `Juju`, which opens each testing package’s `mocked()` around every dispatch.
 
 ### Future work
 
-* A way to add doubles to `Context`, like the one `mocked()` gives `Juju` (perhaps `Context(charm, extensions=[snapd])`), would save single-charm tests from opening them by hand. That's a separate conversation, and the double doesn't need it. Anything like that would most likely use the context manager protocol `Snapd` already has, so adopting it later wouldn't change the double's API.
-* `apt`, `systemd`, `sysctl`, and `passwd` can't be faked the same way: each runs a command with `subprocess` instead of going through a client module, and `sysctl` and `passwd` also read and write files. So the double is snap-only for now. The parts that could be shared (the operation history, injected failures, and opening several doubles at once) are small enough to move into a shared package later without changing this one, and fixtures already make it easy to use several doubles together: `def test_x(snapd, apt):`.
+* A way to add doubles to `Context`, like the one `mocked()` gives `Juju` (perhaps `Context(charm, extensions=[snapd])`), would save single-charm tests from opening them by hand. That’s a separate conversation, and the double doesn’t need it. Anything like that would most likely use the context manager protocol `Snapd` already has, so adopting it later wouldn’t change the double’s API.
+* `apt`, `systemd`, `sysctl`, and `passwd` can’t be faked the same way: each runs a command with `subprocess` instead of going through a client module, and `sysctl` and `passwd` also read and write files. So the double is snap-only for now. The parts that could be shared (the operation history, injected failures, and opening several doubles at once) are small enough to move into a shared package later without changing this one, and fixtures already make it easy to use several doubles together: `def test_x(snapd, apt):`.
