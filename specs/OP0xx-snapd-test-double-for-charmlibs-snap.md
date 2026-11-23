@@ -352,7 +352,7 @@ def test_classic_snap():
 
 ### Injected failures
 
-Some failures can’t be described as store contents, so a test can ask for them directly with `Failure`. The `action` is the library function’s name (`'install'`, `'refresh'`, `'set'`, and so on), and `'*'` matches every action. A failure can be limited to one snap and to a number of times, and the error is any `charmlibs.snap.Error`, raised as given.
+Some failures can’t be described as store contents, so a test can ask for them directly with `Failure`. The `action` is the library function’s name (`'install'`, `'refresh'`, `'set'`, and so on), and `'*'` matches every action. A failure can be limited to one snap and to a number of times. The `error` can be any `charmlibs.snap.Error`, and the charm gets that exact exception object.
 
 snapd not being reachable at all looks like this to a charm:
 
