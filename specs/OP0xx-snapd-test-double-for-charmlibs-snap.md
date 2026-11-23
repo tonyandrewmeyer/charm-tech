@@ -40,7 +40,7 @@ def test_install(monkeypatch):
 
 This gets the test running, but it checks very little. A charm that calls `snap.ensure_installed('prometheus', '2/stable', 7)` passes, even though the real library raises `TypeError` (`revision` is keyword-only), and the same goes for a snap name the library would reject with `ValueError`. The stub has no state, so there's no way to test a charm that installs something and then reads it back. Each charm also ends up writing its own version of the stub, and they tend to cover less as they get copied around.
 
-The cases most worth testing are the ones a stub like this can't express at all: snapd not being reachable, a snap that isn't in the store, or a `post-refresh` hook failing part of the way through a refresh.
+The most valuable tests are often the ones a stub like this can't express at all: snapd not being reachable, a snap that isn't in the store, or a `post-refresh` hook failing part of the way through a refresh.
 
 ## Specification
 
