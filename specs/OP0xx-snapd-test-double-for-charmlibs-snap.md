@@ -91,15 +91,15 @@ class Snapd:
     def __enter__(self) -> Snapd: ...
     def __exit__(self, *exc_info) -> None: ...
 
-    installed: Mapping[str, Snap]  # what's on the machine now
+    installed: Mapping[str, Snap]  # What's on the machine now.
     connections: frozenset[Connection]
-    history: Sequence[Operation]  # what the charm did, in order
+    history: Sequence[Operation]  # What the charm did, in order.
 
 
-def mocked() -> ContextManager[Snapd]: ...  # OP093's mocked()
+def mocked() -> ContextManager[Snapd]: ...  # OP093's mocked().
 
 
-# Frozen dataclasses. revision is stored as a string, as snapd reports it.
+# These are frozen dataclasses. The revision is stored as a string, as snapd reports it.
 Snap(
     name: str,
     *,
@@ -110,28 +110,28 @@ Snap(
     hold: datetime.datetime | None = None,
     services: Mapping[str, Literal['active', 'inactive']] = {},
     config: Mapping[str, Any] = {},
-    aliases: Mapping[str, str] = {},  # alias to app
+    aliases: Mapping[str, str] = {},  # Maps each alias to its app.
     logs: Iterable[snap.LogEntry] = (),
 )
 
 StoreSnap(
     name: str,
     *,
-    channels: Mapping[str, int] = {'latest/stable': 1},  # channel to revision
+    channels: Mapping[str, int] = {'latest/stable': 1},  # Maps each channel to its revision.
     version: str = '1.0',
     classic: bool = False,
     services: Iterable[str] = (),
-    daemon_services: Iterable[str] = (),  # enabled and started on install
+    daemon_services: Iterable[str] = (),  # Enabled and started on install.
 )
 
-Connection(plug: tuple[str, str], slot: tuple[str, str])  # (snap, plug) and (snap, slot)
+Connection(plug: tuple[str, str], slot: tuple[str, str])  # Each is a (snap, name) pair.
 
 Failure(
-    action: str,  # 'install', 'refresh', 'set', and so on, or '*' for everything
+    action: str,  # 'install', 'refresh', 'set', and so on, or '*' for everything.
     *,
-    snap: str | None = None,  # None for any snap
+    snap: str | None = None,  # None means any snap.
     error: snap.Error,
-    times: int | None = None,  # None for every time
+    times: int | None = None,  # None means every time.
 )
 
 
@@ -154,7 +154,7 @@ A `Snapd` is reentrant, as OP093 requires: the fixture and the test that uses it
 
 ```python
 def test_fixture_and_with_block_nest(snapd):
-    with snapd:  # already open via the fixture; this just nests
+    with snapd:  # The fixture already opened it, so this just nests.
         snap.ensure_installed('prometheus', '2/stable')
     assert snapd.installed['prometheus'].channel == '2/stable'
 
@@ -426,7 +426,7 @@ There's one operation type for each library function that reads or changes snap 
 Install(snap, channel, revision, classic)
 Refresh(snap, channel, revision)
 Remove(snap, purge)
-Hold(snap, until)                # None for an indefinite hold
+Hold(snap, until)                # None for an indefinite hold.
 Unhold(snap)
 Start(snap, services, enable)
 Stop(snap, services, disable)
@@ -458,7 +458,7 @@ def test_mocked_alone_is_per_dispatch():
         with snap_testing.mocked() as b:
             assert b is a
     with snap_testing.mocked() as c:
-        assert c.installed == {}  # a new, empty Snapd
+        assert c.installed == {}  # A new, empty Snapd.
 ```
 
 OP089's `Juju` opens each testing package's `mocked()` around every dispatch. A test that wants snap state to carry from one dispatch to the next, or wants to check it afterwards, opens a `Snapd` around the whole test (the fixture is the easiest way), and `Juju`'s `mocked()` calls join it:
