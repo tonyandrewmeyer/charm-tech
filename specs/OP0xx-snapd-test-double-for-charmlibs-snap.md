@@ -30,7 +30,7 @@ The double is `charmlibs.snap`'s testing package, `charmlibs-snap-testing`. It i
 
 `charmlibs.snap` is a set of module-level functions (`ensure_installed`, `install`, `refresh`, `remove`, `hold`, `start`, `stop`, `get`, `set`, `connect`, `alias`, `logs`, and so on), and they all send their requests through a small private client module that speaks JSON to `/run/snapd.socket`.
 
-What charms do today is monkeypatch the public functions in each test:
+What charms do today is monkeypatch the public functions in each test (for example, [osquery-operator](https://github.com/canonical/osquery-operator/blob/2e0810a8153a5cfe99392f0d18797a32aa1d7b59/tests/unit/test_osquery.py#L20-L33)):
 
 ```python
 def test_install(monkeypatch):
