@@ -38,7 +38,7 @@ def test_install(monkeypatch):
     ctx.run(ctx.on.install(), ops.testing.State())
 ```
 
-This gets the test running, but it checks very little. A charm that calls `snap.ensure_installed('prometheus', '2/stable', 7)` passes, even though the real library raises `TypeError` (`revision` is keyword-only), and the same goes for a snap name the library would reject with `ValueError`. The stub has no state, so there’s no way to test a charm that installs something and then reads it back. Each charm also ends up writing its own version of the stub, and they tend to cover less as they get copied around.
+This gets the test running, but it checks very little. A charm that calls `snap.ensure_installed('prometheus', '2/stable', 7)` passes, even though the real library raises `TypeError` (`revision` is keyword-only), and the same goes for a snap name the library would reject with `ValueError`. The stub has no state, so there’s no way to test a charm that installs something and then reads it back. Each charm also has to write its own version of the stub.
 
 The most valuable tests are often the ones a stub like this can’t express at all: snapd not being reachable, a snap that isn’t in the store, or a `post-refresh` hook failing part of the way through a refresh.
 
@@ -504,7 +504,7 @@ That’s much more lenient than a `Snapd`, and it’s meant for charms where sna
 
 ### Behaviour the double reproduces
 
-Because the real library runs on top of the double, the edge cases behave as they do on a real machine. These are the ones a hand-written stub most often gets wrong, and each has a test, either in the double’s own suite or in `snap`’s converted unit tests (see [Avoiding drift](#avoiding-drift)).
+Because the real library runs on top of the double, these edge cases behave as they do on a real machine. Each has a test, either in the double’s own suite or in `snap`’s converted unit tests (see [Avoiding drift](#avoiding-drift)).
 
 * `install` of a snap that’s already installed returns a falsy value instead of raising, as do `remove` of a snap that isn’t installed and (with a store described) `refresh` when there’s nothing newer.
 * `connect` of a plug and slot that are already connected does nothing. `disconnect` of a plug and slot that aren’t connected raises `APIError`, but a `disconnect` that names only one side and matches nothing doesn’t raise.
@@ -534,7 +534,7 @@ def test_alias_unknown_app():
 
 ### Scope for a first release
 
-`ensure_installed`, `install`, `refresh`, `remove`, `list_one`, `hold`, `unhold`, `start`, `stop`, `restart`, `get`, `get_one`, `set`, `unset`, `connect`, `disconnect`, `alias`, and `unalias` are all modelled. `logs` returns the entries the test gave each `Snap`, without applying `limit`. A charm that reads snap logs is usually passing them on somewhere, so the test will want to control exactly what it gets.
+`ensure_installed`, `install`, `refresh`, `remove`, `list_one`, `hold`, `unhold`, `start`, `stop`, `restart`, `get`, `get_one`, `set`, `unset`, `connect`, `disconnect`, `alias`, and `unalias` are all modelled. `logs` returns the entries the test gave each `Snap`, without applying `limit`, so the test controls exactly what the charm gets.
 
 A request to an endpoint the double doesn’t model raises `NotImplementedError` naming the endpoint. If a charm uses something the double doesn’t cover, its test should fail and say why, not pass when it shouldn’t:
 
