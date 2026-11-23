@@ -261,7 +261,7 @@ def test_disconnect():
     assert snapd.connections == set()
 ```
 
-A snap installed with no store described has no services. `start`, `stop` and `restart` on a service the snap doesn’t have raise `AppNotFoundError`, and a hand-written stub never catches that mistake. If the double invented services by default, it wouldn’t catch it either, unless every test remembered to turn that off:
+A snap installed with no store described has no services, so `start`, `stop` and `restart` raise `AppNotFoundError` for it, as they would on a real machine for a service the snap doesn’t ship. That’s stricter than a lot of tests need, but if the double made up services, a charm that starts the wrong service would still pass, which is one of the bugs the monkeypatched version misses too:
 
 ```python
 def test_service_not_shipped():
