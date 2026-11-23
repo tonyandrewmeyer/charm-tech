@@ -552,18 +552,11 @@ The library’s own socket handling (retrying the connection, the request timeou
 
 ### Avoiding drift
 
-The risk with any test double is that it drifts away from the real thing, and charm tests keep passing against behaviour real snapd doesn’t have. There are two things in place to catch that.
+The risk with any test double is that it drifts away from the real thing, so that charm tests pass against behaviour real snapd doesn’t have.
 
-First, `snap`’s own unit tests run through the double. Every test in `snap/tests/unit/` that checks an outcome was moved from a mocked client with canned responses to a `Snapd`, so each change to `charmlibs.snap` is tested against the double in the same CI run, and a library change the double doesn’t keep up with fails there rather than in some charm’s tests. By file:
+To catch that early, `snap`’s own unit tests use the double. A unit test that checks an outcome (what’s installed, or what was raised) runs against a `Snapd` instead of a mocked client with canned responses, so a change to `charmlibs.snap` that the double doesn’t keep up with fails in the `charmlibs` CI rather than in a charm’s tests. Tests that check the exact request the library sends, or argument validation that fails before any request is made, keep their mocks, since the double can’t say what a request body looked like.
 
-* `test_not_found.py`: all converted. An empty `Snapd` gives “not found” for every public function, through the same extra requests a charm test goes through.
-* `test_snapd_snaps.py`, `test_snapd_apps.py`, `test_snapd_conf.py`, and `test_snapd_logs.py`: every outcome test converted.
-* `test_snapd_interfaces.py`: the tests for the extra requests and for errors converted. The rest check the shape of the request.
-* `test_client.py`, `test_utils.py`, `test_functions.py`, `test_empty_or_blank.py`, `test_errors.py`, and `test_snapd_aliases.py`: unchanged.
-
-The unchanged tests check the exact request the library sends, or argument validation that fails before any request is made. The double can say what’s installed and what was raised, but not what a request body looked like, so those tests keep their mocks. Converting the others turned up two places where the double and the library disagreed, and both are fixed.
-
-Second, the functional suite is the reference. `snap/tests/functional/` runs against real snapd, and if the double and a functional test disagree, the double is wrong. What that found for the implementation is under [Further Information](#further-information).
+`snap/tests/functional/` runs against real snapd and is the reference: if the double and a functional test disagree, the double is wrong.
 
 ### Relationship to `ops.testing`
 
@@ -581,7 +574,7 @@ The fixture already wraps the whole test, which covers anything wrapping `Contex
 
 The double is built as a new `charmlibs-snap-testing` distribution on the [`feat/snap-testing-double-squashed`](https://github.com/tonyandrewmeyer/charmlibs/tree/feat/snap-testing-double-squashed/snap/testing) branch of a `charmlibs` fork, as two commits: the package, then `snap`’s unit tests moved onto it. There’s no `charmlibs` PR yet.
 
-On that branch, `snap`’s unit tests pass through the double (857 passed, 14 skipped), as does the double’s own suite (147). Every example in this spec is also run against the branch.
+On that branch, `snap`’s unit tests pass through the double (857 passed, 14 skipped), as does the double’s own suite (147). Moving the unit tests onto the double found two places where the double and the library disagreed, and both are fixed. Every example in this spec is also run against the branch.
 
 `snap`’s full functional suite was run against snapd 2.76 in a VM (501 passed). Then each place where the double and snapd might disagree was checked by sending the same requests to the snapd socket directly. Of five suspects, four were bugs in the double, all now fixed:
 
