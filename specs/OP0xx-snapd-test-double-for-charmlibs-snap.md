@@ -372,7 +372,7 @@ def test_snapd_unavailable_defers():
     assert len(state_out.deferred) == 1
 ```
 
-With `times=1`, the first attempt fails and the retry works, which is how to test a charm that defers and tries again:
+To test a charm that defers and tries again, use `times=1`, so that the first attempt fails and the retry works:
 
 ```python
 def test_post_refresh_hook_failure_is_retried():
