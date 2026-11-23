@@ -270,7 +270,7 @@ def test_service_not_shipped():
             snap.start('prometheus', 'prometheus')
 ```
 
-A test that’s about services says which ones exist, either with `services=` on the `Snap`, as above, or by describing the store (next).
+To test a charm that manages services, give the snap some with `services=` on the `Snap`, as in the earlier examples, or describe the store (see the next section).
 
 `Snapd` checks what it’s given when it’s constructed, much like Scenario’s consistency checker, so a starting state that real snapd could never be in fails immediately with `SnapStateValidationError`, not with something confusing several calls later. That includes malformed snap names and channels, the same snap listed twice, an alias for an app the snap doesn’t have, a connection to a snap that isn’t installed, and a `Failure` for an action that doesn’t exist:
 
