@@ -481,7 +481,7 @@ Logs(snap, limit)
 
 `list_one` isn’t recorded. `ensure_installed` calls it every time, so it would show up in every assertion without saying anything. Only operations that worked are recorded, and an operation that didn’t need to do anything (installing a snap that’s already there, for example) isn’t recorded either. That means an operation that fails because of an injected `Failure` isn’t in `history`. To check how the charm handled the failure, look at its status or whether it deferred the event, as the [Injected failures](#injected-failures) examples do.
 
-A reconcile-style charm will probably only check `installed`, and a charm that has to do things in a particular order will mostly check `history`. Either is fine, and so is both.
+Tests for a reconcile-style charm will probably only need `installed`, and tests for a charm that has to do things in a particular order will mostly use `history`, but nothing stops a test checking both.
 
 ### `mocked`
 
