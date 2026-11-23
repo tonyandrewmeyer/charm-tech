@@ -100,39 +100,49 @@ def mocked() -> ContextManager[Snapd]: ...  # OP093's mocked().
 
 
 # These are frozen dataclasses. The revision is stored as a string, as snapd reports it.
-Snap(
-    name: str,
-    *,
-    channel: str = 'latest/stable',
-    revision: int | str = 1,
-    version: str = '1.0',
-    classic: bool = False,
-    hold: datetime.datetime | None = None,
-    services: Mapping[str, Literal['active', 'inactive']] = {},
-    config: Mapping[str, Any] = {},
-    aliases: Mapping[str, str] = {},  # Maps each alias to its app.
-    logs: Iterable[snap.LogEntry] = (),
-)
+class Snap:
+    def __init__(
+        self,
+        name: str,
+        *,
+        channel: str = 'latest/stable',
+        revision: int | str = 1,
+        version: str = '1.0',
+        classic: bool = False,
+        hold: datetime.datetime | None = None,
+        services: Mapping[str, Literal['active', 'inactive']] = {},
+        config: Mapping[str, Any] = {},
+        aliases: Mapping[str, str] = {},  # Maps each alias to its app.
+        logs: Iterable[snap.LogEntry] = (),
+    ): ...
 
-StoreSnap(
-    name: str,
-    *,
-    channels: Mapping[str, int] = {'latest/stable': 1},  # Maps each channel to its revision.
-    version: str = '1.0',
-    classic: bool = False,
-    services: Iterable[str] = (),
-    daemon_services: Iterable[str] = (),  # Enabled and started on install.
-)
 
-Connection(plug: tuple[str, str], slot: tuple[str, str])  # Each is a (snap, name) pair.
+class StoreSnap:
+    def __init__(
+        self,
+        name: str,
+        *,
+        channels: Mapping[str, int] = {'latest/stable': 1},  # Maps each channel to its revision.
+        version: str = '1.0',
+        classic: bool = False,
+        services: Iterable[str] = (),
+        daemon_services: Iterable[str] = (),  # Enabled and started on install.
+    ): ...
 
-Failure(
-    action: str,  # 'install', 'refresh', 'set', and so on, or '*' for everything.
-    *,
-    snap: str | None = None,  # None means any snap.
-    error: snap.Error,
-    times: int | None = None,  # None means every time.
-)
+
+class Connection:
+    def __init__(self, plug: tuple[str, str], slot: tuple[str, str]): ...  # (snap, name) pairs.
+
+
+class Failure:
+    def __init__(
+        self,
+        action: str,  # 'install', 'refresh', 'set', and so on, or '*' for everything.
+        *,
+        snap: str | None = None,  # None means any snap.
+        error: snap.Error,
+        times: int | None = None,  # None means every time.
+    ): ...
 
 
 class SnapStateValidationError(Exception): ...
@@ -183,8 +193,9 @@ When it does matter, pass the installed snaps to `Snapd`. They’re the same fro
 ```python
 def test_config_changed_refreshes_channel():
     snapd = snap_testing.Snapd([
-        snap_testing.Snap('prometheus', channel='2/stable', revision=100,
-                          services={'prometheus': 'active'}),
+        snap_testing.Snap(
+            'prometheus', channel='2/stable', revision=100, services={'prometheus': 'active'}
+        ),
     ])
     ctx = ops.testing.Context(PrometheusCharm)
 
@@ -192,8 +203,9 @@ def test_config_changed_refreshes_channel():
         ctx.run(ctx.on.config_changed(), ops.testing.State(config={'channel': '2/edge'}))
 
     assert snapd.installed == {
-        'prometheus': snap_testing.Snap('prometheus', channel='2/edge', revision=100,
-                                        services={'prometheus': 'active'}),
+        'prometheus': snap_testing.Snap(
+            'prometheus', channel='2/edge', revision=100, services={'prometheus': 'active'}
+        ),
     }
 ```
 
@@ -218,9 +230,13 @@ def test_config_round_trip():
 def test_logs():
     when = datetime.datetime(2026, 11, 23, 9, 0, tzinfo=datetime.timezone.utc)
     snapd = snap_testing.Snapd([
-        snap_testing.Snap('prometheus', services={'prometheus': 'active'}, logs=[
-            snap.LogEntry(when, 'prometheus.prometheus', 1234, 'Server is ready'),
-        ]),
+        snap_testing.Snap(
+            'prometheus',
+            services={'prometheus': 'active'},
+            logs=[
+                snap.LogEntry(when, 'prometheus.prometheus', 1234, 'Server is ready'),
+            ],
+        ),
     ])
 
     with snapd:
@@ -258,7 +274,7 @@ A test that’s about services says which ones exist, either with `services=` on
 
 `Snapd` checks what it’s given when it’s constructed, much like Scenario’s consistency checker, so a starting state that real snapd could never be in fails immediately with `SnapStateValidationError`, not with something confusing several calls later. That includes malformed snap names and channels, the same snap listed twice, an alias for an app the snap doesn’t have, a connection to a snap that isn’t installed, and a `Failure` for an action that doesn’t exist:
 
-```python
+```pycon
 >>> snap_testing.Snapd([snap_testing.Snap('prometheus', channel='2/nightly')])
 SnapStateValidationError: '2/nightly' is not a valid channel for snap 'prometheus'
 
@@ -273,18 +289,30 @@ By default there’s no store, and any snap installs from any channel. Passing `
 
 ```python
 def test_install_starts_prometheus():
-    snapd = snap_testing.Snapd(store=[
-        snap_testing.StoreSnap('prometheus', channels={'2/stable': 100}, version='2.53.0',
-                               services=['prometheus'], daemon_services=['prometheus']),
-    ])
+    snapd = snap_testing.Snapd(
+        store=[
+            snap_testing.StoreSnap(
+                'prometheus',
+                channels={'2/stable': 100},
+                version='2.53.0',
+                services=['prometheus'],
+                daemon_services=['prometheus'],
+            ),
+        ]
+    )
     ctx = ops.testing.Context(PrometheusCharm)
 
     with snapd:
         ctx.run(ctx.on.install(), ops.testing.State())
 
     assert snapd.installed == {
-        'prometheus': snap_testing.Snap('prometheus', channel='2/stable', revision=100,
-                                        version='2.53.0', services={'prometheus': 'active'}),
+        'prometheus': snap_testing.Snap(
+            'prometheus',
+            channel='2/stable',
+            revision=100,
+            version='2.53.0',
+            services={'prometheus': 'active'},
+        ),
     }
 ```
 
@@ -331,7 +359,9 @@ snapd not being reachable at all looks like this to a charm:
 ```python
 def test_snapd_unavailable_defers():
     snapd = snap_testing.Snapd(
-        failures=[snap_testing.Failure('*', error=snap.ConnectionError('Could not connect to snapd'))],
+        failures=[
+            snap_testing.Failure('*', error=snap.ConnectionError('Could not connect to snapd'))
+        ],
     )
     ctx = ops.testing.Context(PrometheusCharm)
 
@@ -352,9 +382,12 @@ def test_post_refresh_hook_failure_is_retried():
             snap_testing.Failure(
                 'refresh',
                 snap='prometheus',
-                error=snap.ChangeError('run hook "post-refresh": exit status 1',
-                                       kind='charmlibs-snap-change-error',
-                                       value='42', status='Error'),
+                error=snap.ChangeError(
+                    'run hook "post-refresh": exit status 1',
+                    kind='charmlibs-snap-change-error',
+                    value='42',
+                    status='Error',
+                ),
                 times=1,
             ),
         ],
@@ -377,10 +410,15 @@ A failure for one snap leaves the others alone:
 
 ```python
 def test_failure_on_one_snap():
-    snapd = snap_testing.Snapd(failures=[
-        snap_testing.Failure('install', snap='grafana', error=snap.ChangeError(
-            'cannot install', kind='x', value='1', status='Error')),
-    ])
+    snapd = snap_testing.Snapd(
+        failures=[
+            snap_testing.Failure(
+                'install',
+                snap='grafana',
+                error=snap.ChangeError('cannot install', kind='x', value='1', status='Error'),
+            ),
+        ]
+    )
 
     with snapd:
         snap.install('prometheus')
@@ -426,7 +464,7 @@ There’s one operation type for each library function that reads or changes sna
 Install(snap, channel, revision, classic)
 Refresh(snap, channel, revision)
 Remove(snap, purge)
-Hold(snap, until)                # None for an indefinite hold.
+Hold(snap, until)  # None for an indefinite hold.
 Unhold(snap)
 Start(snap, services, enable)
 Stop(snap, services, disable)
@@ -466,7 +504,7 @@ OP089’s `Juju` opens each testing package’s `mocked()` around every dispatch
 ```python
 def test_prometheus_installs_on_deploy(snapd):
     juju = ops.testing.Juju()
-    juju.deploy("./charms/prometheus")
+    juju.deploy('./charms/prometheus')
     juju.settle()
 
     assert snapd.installed['prometheus'].channel == '2/stable'
@@ -533,7 +571,7 @@ def test_alias_unknown_app():
 
 A request to an endpoint the double doesn’t model raises `NotImplementedError` naming the endpoint. If a charm uses something the double doesn’t cover, its test should fail and say why, not pass when it shouldn’t:
 
-```python
+```text
 NotImplementedError: charmlibs-snap-testing does not model GET '/v2/snapshots'
 ```
 
