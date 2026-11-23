@@ -499,7 +499,7 @@ def test_mocked_alone_is_per_dispatch():
         assert c.installed == {}  # A new, empty Snapd.
 ```
 
-OP089’s `Juju` opens each testing package’s `mocked()` around every dispatch. A test that wants snap state to carry from one dispatch to the next, or wants to check it afterwards, opens a `Snapd` around the whole test (the fixture is the easiest way), and `Juju`’s `mocked()` calls join it:
+OP089’s `Juju` opens each testing package’s `mocked()` around every dispatch. To keep snap state from one dispatch to the next, or to check it afterwards, open a `Snapd` around the whole test (using the fixture is the easiest way). `Juju`’s `mocked()` calls then join it:
 
 ```python
 def test_prometheus_installs_on_deploy(snapd):
