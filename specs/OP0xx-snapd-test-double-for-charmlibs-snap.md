@@ -10,7 +10,7 @@
 
 `charmlibs.snap` 2.0 talks to snapd over a unix socket. There’s no snapd on a test runner, so the first `charmlibs.snap` call in a machine charm’s test raises `snap.ConnectionError`, and the charm errors out before it gets to anything the test wanted to check. At the moment the only way around that is to monkeypatch the library.
 
-This spec proposes `Snapd`, a stateful fake snapd that replaces the library’s client functions and leaves the rest of the library running as it does in production. A test sets up what’s installed (and, if it cares, what’s in the store), runs the charm, and then checks what’s installed now and what the charm asked snapd to do:
+This spec proposes `Snapd`, a stateful fake snapd that replaces the library’s client functions and leaves the rest of the library running as it does in production. In a test, you set up what’s installed (and optionally what’s in the store), run the charm, and then check what’s installed now and what the charm asked snapd to do:
 
 ```python
 from charmlibs import snap_testing
@@ -485,21 +485,9 @@ Tests for a reconcile-style charm will probably only need `installed`, and tests
 
 ### `mocked`
 
-Under OP093, every testing package has a `mocked()`: a reentrant context manager that takes no arguments and mocks out the library’s internals. snap isn’t an interface library, so `snap_testing` has no `provider` or `requirer`, only `mocked()`.
+Under OP093, every testing package has a `mocked()`: a reentrant context manager that takes no arguments and mocks out the library’s internals. It has to behave the same however its scopes are opened, whether that’s once per dispatch or once for a whole test. snap isn’t an interface library, so `snap_testing` has no `provider` or `requirer`, only `mocked()`.
 
-`snap_testing.mocked()` is a small wrapper around `Snapd`. If a `Snapd` is already open, `mocked()` joins it, so the code under test talks to the test’s `Snapd`. If not, it opens a new empty one, with no store described, for as long as its own `with` lasts:
-
-```python
-def test_mocked_alone_is_per_dispatch():
-    with snap_testing.mocked() as a:
-        snap.ensure_installed('prometheus', '2/stable')
-        with snap_testing.mocked() as b:
-            assert b is a
-    with snap_testing.mocked() as c:
-        assert c.installed == {}  # A new, empty Snapd.
-```
-
-OP089’s `Juju` opens each testing package’s `mocked()` around every dispatch. To keep snap state from one dispatch to the next, or to check it afterwards, open a `Snapd` around the whole test (using the fixture is the easiest way). `Juju`’s `mocked()` calls then join it:
+If a `Snapd` is already open, `mocked()` joins it, so the code under test talks to the test’s `Snapd`. OP089’s `Juju` opens each testing package’s `mocked()` around every dispatch, so to keep snap state from one dispatch to the next, or to check it afterwards, open a `Snapd` around the whole test (using the fixture is the easiest way):
 
 ```python
 def test_prometheus_installs_on_deploy(snapd):
@@ -510,11 +498,9 @@ def test_prometheus_installs_on_deploy(snapd):
     assert snapd.installed['prometheus'].channel == '2/stable'
 ```
 
-Without an outer `Snapd`, every dispatch starts from an empty machine, so a snap installed in `install` has gone by the next hook. That’s fine for a charm whose use of snaps isn’t what the test is about.
+If no `Snapd` is open, `mocked()` doesn’t keep any state at all. Every snap counts as installed, with the same defaults as a `Snap` (`latest/stable`, revision `'1'` and version `'1.0'`), every service exists, and every operation succeeds. Reads see a snap with no configuration, whatever the charm has set. Since nothing is kept, it makes no difference whether `Juju` opens `mocked()` once per dispatch or once for the whole test.
 
-That does mean the result depends on whether the scope is opened once per test or once per dispatch, which is the question OP093 has open about scope-insensitivity. This spec doesn’t try to settle it. Keeping the state in the scope seems the most sensible choice for now, with an outer `Snapd` being how a test chooses how long that state lives. If OP093 decides `mocked()` has to be scope-insensitive, the bare `mocked()` would need to keep its state somewhere else (keyed by the unit, probably), and `Snapd` wouldn’t change.
-
-`mocked()` has no arguments because a test that cares about the starting state, the store, or failures also wants something to check afterwards, and that’s what a `Snapd` is for.
+That’s much more lenient than a `Snapd`, and it’s meant for charms where snaps aren’t what the test is about. For strict behaviour, a store, injected failures, or anything to check afterwards, open a `Snapd`.
 
 ### Without `ops.testing`
 
@@ -636,7 +622,7 @@ A submodule, `charmlibs.snap.testing`, was also considered. That would avoid one
 ### Related specs
 
 * OP077 (charm library testing) sets out the layout, the `[testing]` extra, and the version lock that `charmlibs-snap-testing` follows.
-* OP093 (charmlibs testing packages API) defines the testing package API, including the `mocked()` that `snap_testing` provides, and has the open question about mocking scope mentioned in [`mocked`](#mocked).
+* OP093 (charmlibs testing packages API) defines the testing package API, including the `mocked()` that `snap_testing` provides and the rule that it behaves the same however its scopes are opened.
 * OP089 (multiple-charm state transition tests) defines `Juju`, which opens each testing package’s `mocked()` around every dispatch.
 
 ### Future work
