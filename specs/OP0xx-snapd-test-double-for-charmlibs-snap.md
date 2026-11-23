@@ -285,7 +285,7 @@ not in its services []
 
 ### The store
 
-By default there’s no store, and any snap installs from any channel. Passing `store=` changes that: the store then has only what the test put in it, and an install takes its revision, version and services from there.
+By default there’s no store, and any snap installs from any channel. If the test passes a list of `StoreSnap` objects as `store=`, only those snaps and channels are available, and an install gets its revision, version and services from the matching `StoreSnap`.
 
 ```python
 def test_install_starts_prometheus():
