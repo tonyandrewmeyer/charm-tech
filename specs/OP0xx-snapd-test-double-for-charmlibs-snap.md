@@ -449,7 +449,7 @@ def test_refresh_stops_service_first():
     ]
 ```
 
-Reads are recorded too, so a charm that only writes configuration when it has changed can be checked for that:
+A charm that only writes configuration when it has changed can be checked for that, because reads are recorded too:
 
 ```python
     assert snapd.history == [
