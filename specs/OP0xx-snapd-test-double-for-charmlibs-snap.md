@@ -69,7 +69,7 @@ It depends on `charmlibs-snap` (at the same version) and nothing else. The OP077
 
 Installing the package registers a `snapd` pytest fixture through a `pytest11` entry point, so there's nothing to add to `conftest.py`.
 
-The double patches functions in the library's private `_client` module from another distribution. There's a reason for that (see [Alternatives](#alternatives)), and `charmlibs.snap` should say in its own docs that those functions are what `charmlibs-snap-testing` relies on, even though they keep their underscore.
+The double patches functions in the library's private `_client` module, even though it's a separate distribution (see [Alternatives](#alternatives) for why). `charmlibs.snap` should document that `charmlibs-snap-testing` relies on those functions, so that they aren't changed without updating the double.
 
 ### The API
 
