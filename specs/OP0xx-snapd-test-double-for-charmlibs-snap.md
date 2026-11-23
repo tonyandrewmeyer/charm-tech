@@ -502,25 +502,6 @@ If no `Snapd` is open, `mocked()` doesn’t keep any state at all. Every snap co
 
 That’s much more lenient than a `Snapd`, and it’s meant for charms where snaps aren’t what the test is about. For strict behaviour, a store, injected failures, or anything to check afterwards, open a `Snapd`.
 
-### Without `ops.testing`
-
-Nothing in the double uses ops, so it works the same with `Harness`:
-
-```python
-def test_harness():
-    snapd = snap_testing.Snapd()
-    harness = ops.testing.Harness(GrafanaCharm)
-
-    with snapd:
-        snap.install('grafana')
-        harness.begin()
-        harness.update_config({'port': 9000})
-
-    assert snapd.installed['grafana'].config == {'http.port': 9000}
-```
-
-and with plain functions that a charm has moved out of its event handlers, like the `workload.reconcile` example in [Setting up the machine](#setting-up-the-machine).
-
 ### Behaviour the double reproduces
 
 Because the real library runs on top of the double, the edge cases behave as they do on a real machine. These are the ones a hand-written stub most often gets wrong, and each has a test, either in the double’s own suite or in `snap`’s converted unit tests (see [Avoiding drift](#avoiding-drift)).
